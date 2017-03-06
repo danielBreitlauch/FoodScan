@@ -22,27 +22,30 @@ class AllYouNeed:
 
     search_url_prefix = 'https://www.allyouneedfresh.de/suchen?term='
 
-    def __init__(self):
+    def __init__(self, email, password):
         self.base_url = 'https://www.allyouneedfresh.de'
         self.basket_url = 'https://www.allyouneedfresh.de/warenkorbuebersicht'
         self.take_url = 'https://www.allyouneedfresh.de/responsive/pages/checkout1.jsf'
 
+        self.email = email
+        self.password = password
         self.session = Session()
         self.take_page_view_state = None
+
 
     @staticmethod
     def search_url(name):
         return AllYouNeed.search_url_prefix + urllib2.quote(name.encode('utf-8'))
 
-    def set_cookies(self, email, passwd):
+    def set_cookies(self):
         driver = webdriver.PhantomJS(executable_path='/usr/local/bin/phantomjs')
         driver.set_window_size(1280, 1024)
         driver.get(self.base_url)
         time.sleep(1)
         driver.find_element_by_link_text("Anmelden").click()
         time.sleep(1)
-        driver.find_element_by_id('zipCodeForm:loginEmail').send_keys(email)
-        driver.find_element_by_id('zipCodeForm:loginPassword').send_keys(passwd)
+        driver.find_element_by_id('zipCodeForm:loginEmail').send_keys(self.email)
+        driver.find_element_by_id('zipCodeForm:loginPassword').send_keys(self.password)
         driver.find_element_by_id('zipCodeForm:loginButton').click()
         time.sleep(1)
         cookie = driver.get_cookies()
@@ -72,9 +75,10 @@ class AllYouNeed:
         blob = BeautifulSoup(res.text, "html.parser")
         return blob.find('input', {'name': 'javax.faces.ViewState'}).get('value')
 
-    def login(self, email, passwd):
+    def login(self):
+        print("Logging in...")
         self.session = Session()
-        self.set_cookies(email, passwd)
+        self.set_cookies()
         self.take_page_view_state = self.j_faces_view_state(self.basket_url)
 
     def is_logged_in(self):
@@ -96,10 +100,9 @@ class AllYouNeed:
         except IOError:
             return False
 
-    def load_session_or_log_in(self, session_file, email, password):
+    def load_session_or_log_in(self, session_file):
         if not self.load_session(session_file):
-            print("Logging in...")
-            self.login(email, password)
+            self.login()
             self.save_session(session_file)
 
     def basket(self):
@@ -176,6 +179,56 @@ class AllYouNeed:
             return ids
 
     def take(self, item):
+        driver = webdriver.PhantomJS(executable_path='/usr/local/bin/phantomjs')
+        driver.set_window_size(1280, 1024)
+        driver.get(self.base_url)
+        time.sleep(1)
+        driver.find_element_by_link_text("Anmelden").click()
+        time.sleep(1)
+        driver.find_element_by_id('zipCodeForm:loginEmail').send_keys(self.email)
+        driver.find_element_by_id('zipCodeForm:loginPassword').send_keys(self.password)
+        driver.find_element_by_id('zipCodeForm:loginButton').click()
+        time.sleep(1)
+        cookie = driver.get_cookies()
+        driver.quit()
+
+        html = self.session.get(AllYouNeed.search_url(name)).text
+        blob = BeautifulSoup(html, "html.parser")
+        r = blob.select('div.product-box.item')
+
+        ids = []
+        perfect = []
+        for i in r:
+            link = i.find('a', class_='article-link')['href']
+            link = urlparse.urljoin(self.base_url, link)
+            price = extract_price(i.find('span', class_='product-price'))
+
+            desc = i.find('div', class_='product-description')
+            details = desc.find('span', class_='product-story').find('span')
+
+            if details:
+                details.extract()
+
+            desc = desc.text.strip().replace('\n', ', ')
+            for c in i['class']:
+                if 'artId' in c:
+                    article_id = int(c[5:])
+                    item = ShopItem(article_id, 1, desc, price, link)
+                    ids.append(item)
+                    match = True
+                    for criteria in name.split():
+                        if criteria.lower() not in desc.lower():
+                            match = False
+                            break
+                    if match:
+                        perfect.append(item)
+
+                    break
+
+
+
+
+
         data = {
             'searchForm': 'searchForm',
             'searchForm:searchInput': '',
@@ -196,6 +249,22 @@ class AllYouNeed:
         answer = self.session.post(self.take_url, data=data).text
         if '<redirect url="/warenkorbuebersicht"></redirect></partial-response>' in answer:
             print("failure to take " + item.name)
+
+        if item.amount == 0:
+            for i in self.basket():
+                if item.article_id == i.article_id:
+                    print(self.is_logged_in())
+                    self.login()
+                    self.take(item)
+                    return
+        else:
+            for i in self.basket():
+                if item.article_id == i.article_id:
+                    return
+
+            print(self.is_logged_in())
+            self.login()
+            self.take(item)
 
     def increase(self, item):
         for i in self.basket():
