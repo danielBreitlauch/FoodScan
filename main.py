@@ -13,8 +13,8 @@ import time
 b = Bring(bring_user_uuid, bring_api_key, bring_authorization, bring_cookie)
 cc = CodeCheck()
 
-ayn = AllYouNeed()
-ayn.load_session_or_log_in('session_cookies', all_you_need_email, all_you_need_password)
+ayn = AllYouNeed(all_you_need_email, all_you_need_password)
+ayn.load_session_or_log_in('session_cookies')
 
 l = WuList(ayn, cc, b, wunderlist_client_id, wunderlist_token, ayn_wunderlist_list_id, bring_export_list_id)
 # bc = Barcode(barcode_device, l.add_barcode)

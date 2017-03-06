@@ -4,28 +4,26 @@ import wunderpy2
 
 
 class WuList:
-
-    def __init__(self, allyouneed, codecheck, bring, client_id, token, ayn_wunderlist_list_id, bring_export_list_id):
+    def __init__(self, shop, code_check, bring, client_id, token, shop_list_id, bring_export_list_id):
+        self.client = wunderpy2.WunderApi().get_client(token, client_id)
         self.bring = bring
-        self.codecheck = codecheck
-        self.allyouneed = allyouneed
+        self.code_check = code_check
+        self.shop = shop
         self.bring_export_list_id = bring_export_list_id
-        self.ayn_list_id = ayn_wunderlist_list_id
-        self.api = wunderpy2.WunderApi()
-        self.client = self.api.get_client(token, client_id)
-        self.ayn_list_rev = 0
-        self.ayn_task_revs = {}
-        self.ayn_items = {}
+        self.shop_list_id = shop_list_id
+        self.shop_list_rev = 0
+        self.shop_task_revs = {}
+        self.shop_items = {}
 
     def check_action(self):
         # self.transfer_bring_list_action()
-        self.detect_ayn_list_change()
+        self.detect_shop_list_change()
         # detect chosen variants
         #   add variant to ayn + check the item
         #   remember choice
 
-    def detect_ayn_list_change(self):
-        if self.ayn_list_rev == self.client.get_list(self.ayn_list_id)['revision']:
+    def detect_shop_list_change(self):
+        if self.shop_list_rev == self.client.get_list(self.shop_list_id)['revision']:
             return
 
         new, changed, deleted_ids = self.detect_changed_tasks()
@@ -33,7 +31,7 @@ class WuList:
             self.remove_item_by_id(iid)
 
         for task in new:
-            self.new_item(task)
+            self.new_item(task, with_selects=True)
 
         for task in changed:
             self.update_item(task)
@@ -49,41 +47,49 @@ class WuList:
                 self.client.delete_task(task['id'], task['revision'])
 
     def add_barcode(self, barcode):
-        item = self.codecheck.get_description(barcode)
+        item = self.code_check.get_description(barcode)
 
-        for task in self.client.get_tasks(self.ayn_list_id):
+        for task in self.client.get_tasks(self.shop_list_id):
             if item.name in task['title']:
                 existing = self.item_from_task(task)
                 existing.inc_amount()
                 self.client.update_task(task['id'], task['revision'], title=existing.title())
+                # next round will detect change and update internal items and shop
                 return
 
-        task = self.client.create_task(self.ayn_list_id, title=item.title())
+        task = self.client.create_task(self.shop_list_id, title=item.title())
         iid = task['id']
         self.client.create_note(iid, item.note())
-        self.ayn_items[iid] = item
-        self.ayn_task_revs[iid] = task['revision']
+        self.shop_items[iid] = item
+        self.shop_task_revs[iid] = task['revision']
 
     def remove_item_by_id(self, iid):
-        item = self.ayn_items.pop(iid)
+        item = self.shop_items.pop(iid)
+        print("delete - " + item.name)
+
         if item.synced():
-            self.allyouneed.delete(item.synced_shop_item())
+            self.shop.delete(item.selected_shop_item())
 
-    def new_item(self, task):
+    def new_item(self, task, with_selects=False):
+        print("new - " + task['title'])
         iid = task['id']
-        item = self.item_from_task(task)
-        ayn_items = self.allyouneed.search(item.name)
-        item.add_shop_items(ayn_items)
+        item = self.item_from_task(task, with_selects=with_selects)
+        shop_items = self.shop.search(item.name)
+        item.add_shop_items(shop_items)
 
-        if len(ayn_items) == 1 and not item.synced():
-            item.set_synced()
-            self.allyouneed.take(item.synced_shop_item())
+        if len(shop_items) == 1 and not item.synced():
+            item.select_shop_item(item.shop_items[0])
+            self.shop.take(item.selected_shop_item())
 
+        checked = []
         for sub in self.client.get_task_subtasks(iid):
+            if sub['completed']:
+                checked.append(ShopItem.parse(sub['title']))
             self.client.delete_subtask(sub['id'], sub['revision'])
 
-        for ayn_item in ayn_items:
-            self.client.create_subtask(iid, str(ayn_item.price / 100.0) + u'€ ' + ayn_item.name + u' (' + ayn_item.link + u')')
+        for shop_item in item.shop_items:
+            comp = shop_item in checked or len(item.shop_items) == 1
+            self.client.create_subtask(iid, unicode(shop_item), completed=comp)
 
         notes = self.client.get_task_notes(iid)
         if len(notes) == 1 and notes[0]['content'] != item.note():
@@ -91,42 +97,59 @@ class WuList:
         if len(notes) == 0:
             self.client.create_note(iid, item.note())
 
-        self.ayn_items[iid] = item
+        self.shop_items[iid] = item
         new_revision = self.client.get_task(iid)['revision']
-        self.ayn_task_revs[iid] = new_revision
+        self.shop_task_revs[iid] = new_revision
         self.client.update_task(iid, new_revision, title=item.title())
 
     def update_item(self, task):
+        print("Update - " + task['title'])
         iid = task['id']
-        item = self.item_from_task(task)
-        existing = self.ayn_items[iid]
+        item = self.item_from_task(task, with_selects=True)
+        existing = self.shop_items[iid]
 
         if item != existing:
             self.remove_item_by_id(iid)
             self.new_item(task)
-        elif existing.amount != item.amount:
-            existing.amount = item.amount
-            if existing.synced():
-                self.allyouneed.take(existing.synced_shop_item())
+        else:
+            update = False
+            if item.synced() and not existing.synced():
+                existing.select_shop_item(item.selected_shop_item())
+                self.shop.take(existing.selected_shop_item())
+                update = True
+            if not item.synced() and existing.synced():
+                self.shop.delete(existing.selected_shop_item())
+                existing.select_shop_item(None)
+                update = True
+
+            if existing.amount != item.amount:
+                existing.amount = item.amount
+                if existing.synced():
+                    self.shop.take(existing.selected_shop_item())
+                    update = True
+            if update:
+                new_revision = self.client.get_task(iid)['revision']
+                self.shop_task_revs[iid] = new_revision
+                self.client.update_task(iid, new_revision, title=existing.title())
 
     def detect_changed_tasks(self):
-        self.ayn_list_rev = self.client.get_list(self.ayn_list_id)['revision']
-        new_tasks = self.client.get_tasks(self.ayn_list_id)
+        self.shop_list_rev = self.client.get_list(self.shop_list_id)['revision']
+        new_tasks = self.client.get_tasks(self.shop_list_id)
         changed = []
         new = []
         for new_task in new_tasks:
             iid = new_task['id']
             revision = new_task['revision']
-            if iid in self.ayn_task_revs:
-                if self.ayn_task_revs[iid] != revision:
-                    self.ayn_task_revs[iid] = revision
+            if iid in self.shop_task_revs:
+                if self.shop_task_revs[iid] != revision:
+                    self.shop_task_revs[iid] = revision
                     changed.append(new_task)
             else:
-                self.ayn_task_revs[iid] = revision
+                self.shop_task_revs[iid] = revision
                 new.append(new_task)
 
         deleted = []
-        for iid in self.ayn_task_revs:
+        for iid in self.shop_task_revs:
             found = False
             for new_task in new_tasks:
                 if iid == new_task['id']:
@@ -136,15 +159,21 @@ class WuList:
                 deleted.append(iid)
 
         for iid in deleted:
-            self.ayn_task_revs.pop(iid)
+            self.shop_task_revs.pop(iid)
 
         return new, changed, deleted
 
-    def item_from_task(self, task):
+    def item_from_task(self, task, with_selects=False):
         notes = self.client.get_task_notes(task['id'])
         if len(notes) > 0:
             notes = notes[0]['content']
         else:
             notes = u""
 
-        return Item.parse(task['title'], notes)
+        sub_filter = []
+        if with_selects:
+            for sub in self.client.get_task_subtasks(task['id'], completed=True):
+                if sub['completed']:
+                    sub_filter.append(sub)
+
+        return Item.parse(task['title'], notes, sub_filter)

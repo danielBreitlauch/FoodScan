@@ -2,7 +2,6 @@
 
 
 class ShopItem:
-
     def __init__(self, article_id, amount, name, price, link):
         self.article_id = article_id
         self.amount = amount
@@ -10,18 +9,45 @@ class ShopItem:
         self.price = price
         self.link = link
 
+    def __unicode__(self):
+        return str(self.price / 100.0) + u'€ ' + self.name + u' (' + self.link + u')'
+
+    def __eq__(self, other):
+        if isinstance(other, ShopItem):
+            return self.name == other.name and self.price == other.price and self.link == other.link
+
+        return NotImplemented
+
+    def __ne__(self, other):
+        result = self.__eq__(other)
+        if result is NotImplemented:
+            return result
+        return not result
+
+    @classmethod
+    def parse(cls, string):
+        price_end = string.find(u'€ ')
+        name_end = string.find(u' (', price_end)
+        link_end = string.find(u')', name_end)
+
+        price = float(string[:price_end]) * 100
+        name = string[price_end + 2:name_end]
+        link = string[name_end + 2:link_end]
+
+        return ShopItem(None, None, name, price, link)
+
 
 class Item:
 
-    def __init__(self, name, cc_price=None, ingredients=None, ratings=None, amount=1, num_rating=0, ayn_state=None, cc_url=None):
+    def __init__(self, name, cc_price=None, ingredients=None, ratings=None, cc_url=None, amount=1, num_rating=0):
         self.name = name
         self.cc_price = cc_price
         self.ingredients = ingredients
         self.ratings_data = ratings
         self.num_rating = num_rating
         self.amount = amount
-        self.ayn_state = ayn_state
-        self.ayn_items = []
+        self.shop_items = None
+        self.selected_item = None
         if cc_url:
             self.cc_url = cc_url
         else:
@@ -31,21 +57,43 @@ class Item:
     def inc_amount(self, amount=1):
         self.amount += amount
 
-    def add_shop_items(self, ayn_items):
-        if self.ayn_state is None:
-            self.set_searched()
-        for item in ayn_items:
-            item.amount = self.amount
-            self.ayn_items.append(item)
+    def add_shop_items(self, shop_items):
+        if self.shop_items is None:
+            self.shop_items = []
 
-    def synced_shop_item(self):
-        item = self.ayn_items[0]
-        item.amount = self.amount
-        return item
+        for item in shop_items:
+            item.amount = self.amount
+
+            if item in self.shop_items:
+                self.shop_items.remove(item)
+            if item == self.selected_item:
+                self.selected_item = item
+
+            self.shop_items.append(item)
+
+        if len(shop_items) == 1:
+            self.selected_item = self.shop_items[0]
+
+    def select_shop_item(self, item):
+        if self.shop_items is None and item is not None:
+            self.shop_items = [item]
+
+        if item is None:
+            self.selected_item = None
+        else:
+            for i in self.shop_items:
+                if i == item:
+                    self.selected_item = i
+
+            self.selected_item.amount = self.amount
+
+    def selected_shop_item(self):
+        self.selected_item.amount = self.amount
+        return self.selected_item
 
     def __eq__(self, other):
         if isinstance(other, Item):
-            return self.name == other.name and self.ayn_state == other.ayn_state
+            return self.name == other.name
 
         return NotImplemented
 
@@ -56,24 +104,18 @@ class Item:
         return not result
 
     def synced(self):
-        return self.ayn_state == "synced"
-
-    def set_synced(self):
-        self.ayn_state = "synced"
+        return self.selected_item is not None
 
     def searched(self):
-        return self.ayn_state == "searched"
-
-    def set_searched(self):
-        self.ayn_state = "searched"
+        return self.shop_items is not None
 
     def title(self):
         title = ""
         price = self.cc_price
         if self.synced():
             title = u"\u2713 "
-            price = self.ayn_items[0].price
-        if self.searched():
+            price = self.selected_item.price
+        elif self.searched():
             title = u"\u2605 "
 
         title += str(self.amount) + " " + self.name
@@ -96,27 +138,32 @@ class Item:
         return note
 
     @classmethod
-    def parse(cls, title, notes):
-        ayn_state, name, amount, price, num_rating = cls.parse_title(title)
+    def parse(cls, title, notes, completed_subs):
+        name, amount, price, num_rating = cls.parse_title(title)
         cc_url, ingredients, ratings = cls.parse_notes(notes)
+        shop_item = cls.parse_completed_subs(completed_subs)
 
-        return Item(name=name,
+        item = Item(name=name,
                     ingredients=ingredients,
                     cc_url=cc_url,
                     ratings=ratings,
                     amount=amount,
-                    num_rating=num_rating,
-                    ayn_state=ayn_state)
+                    num_rating=num_rating)
+
+        if shop_item:
+            item.select_shop_item(shop_item)
+
+        return item
 
     @classmethod
     def parse_title(cls, title):
-        ayn_state = None
+        shop_state = None
         if title[0] == u"\u2713":
-            ayn_state = "synced"
+            shop_state = "synced"
         elif title[0] == u"\u2605":
-            ayn_state = "searched"
+            shop_state = "searched"
 
-        if ayn_state:
+        if title[0] == u"\u2713" or title[0] == u"\u2605":
             title = title[2:]
 
         pos = title.find(" ")
@@ -142,7 +189,7 @@ class Item:
                 price = title[pos2 + 4:euro]
                 # num_rating = int(title[euro + 12:-1])
 
-        return ayn_state, name, amount, price, num_rating
+        return name, amount, price, num_rating
 
     @classmethod
     def parse_notes(cls, notes):
@@ -168,6 +215,17 @@ class Item:
 
         ingredients = notes[ratings_end + 9:]
         return url, ingredients, ratings_data
+
+    @classmethod
+    def parse_completed_subs(cls, completed_subs):
+        if len(completed_subs) == 0:
+            return None
+
+        shop_items = []
+        for item in completed_subs:
+            shop_items.append(ShopItem.parse(item['title']))
+
+        return shop_items[0]
 
 
 def is_int(string):
