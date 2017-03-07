@@ -5,6 +5,7 @@ from requests import *
 from bs4 import BeautifulSoup
 import time
 from selenium import webdriver
+from selenium.webdriver.common.keys import Keys
 from datetime import datetime
 
 from item import ShopItem
@@ -31,25 +32,24 @@ class AllYouNeed:
         self.password = password
         self.session = Session()
         self.take_page_view_state = None
-
+        self.driver = webdriver.PhantomJS(executable_path='/usr/local/bin/phantomjs')
+        # self.driver = webdriver.Chrome('./chromedriver')
+        self.driver.set_window_size(1280, 1024)
 
     @staticmethod
     def search_url(name):
         return AllYouNeed.search_url_prefix + urllib2.quote(name.encode('utf-8'))
 
     def set_cookies(self):
-        driver = webdriver.PhantomJS(executable_path='/usr/local/bin/phantomjs')
-        driver.set_window_size(1280, 1024)
-        driver.get(self.base_url)
+        self.driver.get(self.base_url)
         time.sleep(1)
-        driver.find_element_by_link_text("Anmelden").click()
+        self.driver.find_element_by_link_text("Anmelden").click()
         time.sleep(1)
-        driver.find_element_by_id('zipCodeForm:loginEmail').send_keys(self.email)
-        driver.find_element_by_id('zipCodeForm:loginPassword').send_keys(self.password)
-        driver.find_element_by_id('zipCodeForm:loginButton').click()
+        self.driver.find_element_by_id('zipCodeForm:loginEmail').send_keys(self.email)
+        self.driver.find_element_by_id('zipCodeForm:loginPassword').send_keys(self.password)
+        self.driver.find_element_by_id('zipCodeForm:loginButton').click()
         time.sleep(1)
-        cookie = driver.get_cookies()
-        driver.quit()
+        cookie = self.driver.get_cookies()
 
         for c in cookie:
             if 'expiry' in c:
@@ -121,15 +121,16 @@ class AllYouNeed:
             if pr:
                 price_col.append(pr)
 
-        article_col = r.findAll('div', class_="row")
+        article_col = []
+        for d in r.findAll('div', class_="row"):
+            for clazz in d.get('class'):  # article_col[0] is the table header
+                if 'artId' in clazz:
+                    article_col.append(int(clazz[5:]))
+                    break
 
         res = []
         for i in range(len(amount_col)):
-            article_id = None
-            for clazz in article_col[i + 1].get('class'): # article_col[0] is the table header
-                if 'artId' in clazz:
-                    article_id = int(clazz[5:])
-
+            article_id = article_col[i]
             amount = int(amount_col[i].text.replace('x', '').strip())
             item = name_col[i]
             link = urlparse.urljoin(self.base_url, item.find('a')['href'])
@@ -179,92 +180,28 @@ class AllYouNeed:
             return ids
 
     def take(self, item):
-        driver = webdriver.PhantomJS(executable_path='/usr/local/bin/phantomjs')
-        driver.set_window_size(1280, 1024)
-        driver.get(self.base_url)
-        time.sleep(1)
-        driver.find_element_by_link_text("Anmelden").click()
-        time.sleep(1)
-        driver.find_element_by_id('zipCodeForm:loginEmail').send_keys(self.email)
-        driver.find_element_by_id('zipCodeForm:loginPassword').send_keys(self.password)
-        driver.find_element_by_id('zipCodeForm:loginButton').click()
-        time.sleep(1)
-        cookie = driver.get_cookies()
-        driver.quit()
+        self.driver.get(AllYouNeed.search_url(item.name))
+        time.sleep(2)
 
-        html = self.session.get(AllYouNeed.search_url(name)).text
-        blob = BeautifulSoup(html, "html.parser")
-        r = blob.select('div.product-box.item')
+        ccc = self.driver.find_element_by_css_selector('.artId' + str(item.article_id))
+        ccc = ccc.find_element_by_class_name('product-cart')
+        inps = ccc.find_elements_by_tag_name('input')
+        if len(inps) == 0 or not inps[0].is_displayed():
+            print("taking..")
+            ccc = ccc.find_element_by_tag_name('a')
+            ccc.click()
+            time.sleep(3)
 
-        ids = []
-        perfect = []
-        for i in r:
-            link = i.find('a', class_='article-link')['href']
-            link = urlparse.urljoin(self.base_url, link)
-            price = extract_price(i.find('span', class_='product-price'))
-
-            desc = i.find('div', class_='product-description')
-            details = desc.find('span', class_='product-story').find('span')
-
-            if details:
-                details.extract()
-
-            desc = desc.text.strip().replace('\n', ', ')
-            for c in i['class']:
-                if 'artId' in c:
-                    article_id = int(c[5:])
-                    item = ShopItem(article_id, 1, desc, price, link)
-                    ids.append(item)
-                    match = True
-                    for criteria in name.split():
-                        if criteria.lower() not in desc.lower():
-                            match = False
-                            break
-                    if match:
-                        perfect.append(item)
-
-                    break
-
-
-
-
-
-        data = {
-            'searchForm': 'searchForm',
-            'searchForm:searchInput': '',
-            'javax.faces.ViewState': self.take_page_view_state,
-            'javax.faces.source': 'j_idt386',
-            'javax.faces.partial.execute': 'j_idt386 @component',
-            'javax.faces.partial.render': '@component',
-            'articleId': str(item.article_id),
-            'amount': str(item.amount),
-            'actionSource': 'REX_IMPULSE_PUCHASE_A_KU',
-            'org.richfaces.ajax.component': 'j_idt386',
-            'j_idt386': 'j_idt386',
-            'rfExt': 'null',
-            'AJAX:EVENTS_COUNT': '1',
-            'javax.faces.partial.ajax': 'true'
-        }
-
-        answer = self.session.post(self.take_url, data=data).text
-        if '<redirect url="/warenkorbuebersicht"></redirect></partial-response>' in answer:
-            print("failure to take " + item.name)
-
-        if item.amount == 0:
-            for i in self.basket():
-                if item.article_id == i.article_id:
-                    print(self.is_logged_in())
-                    self.login()
-                    self.take(item)
-                    return
+            ccc = self.driver.find_element_by_css_selector('.artId' + str(item.article_id))
+            ccc = ccc.find_element_by_class_name('product-cart')
+            inp = ccc.find_element_by_tag_name('input')
         else:
-            for i in self.basket():
-                if item.article_id == i.article_id:
-                    return
-
-            print(self.is_logged_in())
-            self.login()
-            self.take(item)
+            inp = inps[0]
+        inp.click()
+        # inp.send_keys(Keys.CONTROL, 'a')
+        inp.send_keys(str(item.amount))
+        inp.send_keys(Keys.ENTER)
+        time.sleep(1)
 
     def increase(self, item):
         for i in self.basket():

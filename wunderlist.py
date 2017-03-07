@@ -18,9 +18,6 @@ class WuList:
     def check_action(self):
         # self.transfer_bring_list_action()
         self.detect_shop_list_change()
-        # detect chosen variants
-        #   add variant to ayn + check the item
-        #   remember choice
 
     def detect_shop_list_change(self):
         if self.shop_list_rev == self.client.get_list(self.shop_list_id)['revision']:
