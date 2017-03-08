@@ -40,17 +40,7 @@ class AllYouNeed:
     def search_url(name):
         return AllYouNeed.search_url_prefix + urllib2.quote(name.encode('utf-8'))
 
-    def set_cookies(self):
-        self.driver.get(self.base_url)
-        time.sleep(1)
-        self.driver.find_element_by_link_text("Anmelden").click()
-        time.sleep(1)
-        self.driver.find_element_by_id('zipCodeForm:loginEmail').send_keys(self.email)
-        self.driver.find_element_by_id('zipCodeForm:loginPassword').send_keys(self.password)
-        self.driver.find_element_by_id('zipCodeForm:loginButton').click()
-        time.sleep(1)
-        cookie = self.driver.get_cookies()
-
+    def cookies_to_session(self, cookie):
         for c in cookie:
             if 'expiry' in c:
                 ex = c['expiry']
@@ -70,6 +60,17 @@ class AllYouNeed:
                 c['rest'] = {'HttpOnly': hto}
             self.session.cookies.set(**c)
 
+    def set_cookies(self):
+        self.driver.get(self.base_url)
+        time.sleep(1)
+        self.driver.find_element_by_link_text("Anmelden").click()
+        time.sleep(1)
+        self.driver.find_element_by_id('zipCodeForm:loginEmail').send_keys(self.email)
+        self.driver.find_element_by_id('zipCodeForm:loginPassword').send_keys(self.password)
+        self.driver.find_element_by_id('zipCodeForm:loginButton').click()
+        time.sleep(1)
+        self.cookies_to_session(self.driver.get_cookies())
+
     def j_faces_view_state(self, url):
         res = self.session.get(url)
         blob = BeautifulSoup(res.text, "html.parser")
@@ -88,14 +89,20 @@ class AllYouNeed:
 
     def save_session(self, session_file):
         with open(session_file, 'w') as f:
-            pickle.dump(self.session.cookies, f)
+            pickle.dump(self.driver.get_cookies(), f)
 
     def load_session(self, session_file):
         try:
             with open(session_file) as f:
                 cookies = pickle.load(f)
                 self.session = Session()
-                self.session.cookies.update(cookies)
+                self.cookies_to_session(cookies)
+                for cookie in cookies:
+                    for k in ('name', 'value', 'domain', 'path', 'expiry'):
+                        if k not in list(cookie.keys()):
+                            if k == 'expiry':
+                                cookie[k] = 1475825481
+                    self.driver.add_cookie({k: cookie[k] for k in ('name', 'value', 'domain', 'path', 'expiry') if k in cookie})
                 return self.is_logged_in()
         except IOError:
             return False
