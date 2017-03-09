@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import pickle
 import urllib2
 import urlparse
@@ -181,10 +183,8 @@ class AllYouNeed:
                         perfect.append(item)
 
                     break
-        if perfect:
-            return perfect
-        else:
-            return ids
+
+        return perfect if perfect else ids
 
     def take(self, item):
         self.driver.get(AllYouNeed.search_url(item.name))
