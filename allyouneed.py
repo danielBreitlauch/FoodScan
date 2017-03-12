@@ -11,6 +11,7 @@ from selenium.webdriver.common.keys import Keys
 from datetime import datetime
 
 from item import ShopItem
+from shop import Shop
 
 
 def extract_price(dom_item):
@@ -21,19 +22,17 @@ def extract_price(dom_item):
     return integer * 100 + decimal
 
 
-class AllYouNeed:
+class AllYouNeed(Shop):
 
     search_url_prefix = 'https://www.allyouneedfresh.de/suchen?term='
 
-    def __init__(self, email, password):
+    def __init__(self, email, password, cookie_file="ayn_cookies"):
         self.base_url = 'https://www.allyouneedfresh.de'
         self.basket_url = 'https://www.allyouneedfresh.de/warenkorbuebersicht'
         self.take_url = 'https://www.allyouneedfresh.de/responsive/pages/checkout1.jsf'
 
-        self.email = email
-        self.password = password
-        self.session = Session()
         self.take_page_view_state = None
+        Shop.__init__(self, email, password, cookie_file)
         self.driver = webdriver.PhantomJS(executable_path='/usr/local/bin/phantomjs')
         # self.driver = webdriver.Chrome('./chromedriver')
         self.driver.set_window_size(1280, 1024)
@@ -41,37 +40,6 @@ class AllYouNeed:
     @staticmethod
     def search_url(name):
         return AllYouNeed.search_url_prefix + urllib2.quote(name.encode('utf-8'))
-
-    def cookies_to_session(self, cookie):
-        for c in cookie:
-            if 'expiry' in c:
-                ex = c['expiry']
-                c.pop('expiry')
-                c['expires'] = ex
-            if 'HttpOnly' in c:
-                hto = c['HttpOnly']
-                c.pop('HttpOnly')
-                c['rest'] = {'HttpOnly': hto}
-            if 'httpOnly' in c:
-                hto = c['httpOnly']
-                c.pop('httpOnly')
-                c['rest'] = {'HttpOnly': hto}
-            if 'httponly' in c:
-                hto = c['httponly']
-                c.pop('httponly')
-                c['rest'] = {'HttpOnly': hto}
-            self.session.cookies.set(**c)
-
-    def set_cookies(self):
-        self.driver.get(self.base_url)
-        time.sleep(1)
-        self.driver.find_element_by_link_text("Anmelden").click()
-        time.sleep(1)
-        self.driver.find_element_by_id('zipCodeForm:loginEmail').send_keys(self.email)
-        self.driver.find_element_by_id('zipCodeForm:loginPassword').send_keys(self.password)
-        self.driver.find_element_by_id('zipCodeForm:loginButton').click()
-        time.sleep(1)
-        self.cookies_to_session(self.driver.get_cookies())
 
     def j_faces_view_state(self, url):
         res = self.session.get(url)
@@ -81,24 +49,33 @@ class AllYouNeed:
     def login(self):
         print("Logging in...")
         self.session = Session()
-        self.set_cookies()
+        self.driver.get(self.base_url)
+        time.sleep(1)
+        self.driver.find_element_by_link_text("Anmelden").click()
+        time.sleep(1)
+        self.driver.find_element_by_id('zipCodeForm:loginEmail').send_keys(self.email)
+        self.driver.find_element_by_id('zipCodeForm:loginPassword').send_keys(self.password)
+        self.driver.find_element_by_id('zipCodeForm:loginButton').click()
+        time.sleep(1)
+        self.new_session_with_cookies(self.driver.get_cookies())
         self.take_page_view_state = self.j_faces_view_state(self.basket_url)
+        self.save_session()
 
-    def is_logged_in(self):
-        html = self.session.get(self.base_url).text
+    def is_logged_in(self, html=None):
+        if not html:
+            html = self.session.get(self.base_url).text
         x = html.find('Anmelden/Registrieren')
         return x < 0
 
-    def save_session(self, session_file):
-        with open(session_file, 'w') as f:
+    def save_session(self):
+        with open(self.cookie_file, 'w') as f:
             pickle.dump(self.driver.get_cookies(), f)
 
-    def load_session(self, session_file):
+    def load_session(self):
         try:
-            with open(session_file) as f:
+            with open(self.cookie_file) as f:
                 cookies = pickle.load(f)
-                self.session = Session()
-                self.cookies_to_session(cookies)
+                self.new_session_with_cookies(cookies)
                 for cookie in cookies:
                     for k in ('name', 'value', 'domain', 'path', 'expiry'):
                         if k not in list(cookie.keys()):
@@ -109,12 +86,7 @@ class AllYouNeed:
         except IOError:
             return False
 
-    def load_session_or_log_in(self, session_file):
-        if not self.load_session(session_file):
-            self.login()
-            self.save_session(session_file)
-
-    def basket(self):
+    def cart(self):
         html = self.session.get(self.basket_url).text
         x = html.find('Sie haben leider')
         if x > 0:
@@ -209,17 +181,6 @@ class AllYouNeed:
         inp.send_keys(str(item.amount))
         inp.send_keys(Keys.ENTER)
         time.sleep(1)
-
-    def increase(self, item):
-        for i in self.basket():
-            if i.article_id == item.article_id:
-                item.amount += i.amount
-
-        self.take(item)
-
-    def delete(self, item):
-        item.amount = 0
-        self.take(item)
 
     def shelf_life(self, item_link):
         html = self.session.get(item_link).text
