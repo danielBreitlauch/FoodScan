@@ -1,28 +1,29 @@
 # -*- coding: utf-8 -*-
 
 import pickle
+import time
 import urllib2
 import urlparse
+
 from bs4 import BeautifulSoup
-import time
-from selenium import webdriver
-from item import ShopItem
-from shop import Shop
+from requests import Session
+
+from FoodScan.Shops.shop import Shop
+from FoodScan.item import ShopItem
 
 
 class Kaufland(Shop):
 
     search_url_prefix = 'https://shop.kaufland.de/search/?text='
 
-    def __init__(self, email, password, cookie_file="kl_cookies"):
+    def __init__(self, email, password, captcha_service, cookie_file="kl_cookies"):
+        self.captcha_service = captcha_service
         self.base_url = 'https://shop.kaufland.de'
         self.login_url = "https://shop.kaufland.de/login"
         self.account_url = "https://shop.kaufland.de/my-account"
         self.take_url = 'https://shop.kaufland.de/cart/modify'
         self.basket_url = 'https://shop.kaufland.de/cart'
 
-        self.driver = webdriver.Chrome('./chromedriver')
-        self.driver.set_window_size(1280, 1030)
         Shop.__init__(self, email, password, cookie_file)
 
     @staticmethod
@@ -31,38 +32,42 @@ class Kaufland(Shop):
 
     def login(self):
         print("Logging in...")
-        # self.session = Session()
-        self.driver.get(self.login_url)
-        time.sleep(1)
+        self.session = Session()
+        html = self.session.get(self.account_url).text
+        blob = BeautifulSoup(html, "html.parser")
+        token = blob.find('input', {'name': 'CSRFToken'}).get('value')
+        site_key = blob.find('input', {'id': 'siteKey'}).get('value')
 
-        self.driver.find_element_by_id('j_username').send_keys(self.email)
-        self.driver.find_element_by_id('j_password').send_keys(self.password)
-        subs = self.driver.find_elements_by_tag_name('button')
-        for el in subs:
-            if "Anmelden" in el.text:
-                el.click()
-                break
+        job = self.captcha_service.create(self.login_url, site_key)
+        time.sleep(5)
 
-        time.sleep(1)
-        self.new_session_with_cookies(self.driver.get_cookies())
+        data = [
+            ('j_username', self.email),
+            ('j_password', self.password),
+            ('g-recaptcha-response', self.captcha_service.result(job)),
+            ('siteKeyCaptcha', site_key),
+            ('submit-form', ''),
+            ('CSRFToken', token),
+        ]
+
+        self.session.post(self.base_url + '/j_spring_security_check', data=data)
         self.save_session()
 
     def is_logged_in(self, html=None):
         if not html:
             html = self.session.get(self.account_url).text
-        x = html.find('Breitlauch')
-        y = html.find('Abmelden')
-        return x > 0 and y > 0
+        return html.find('Abmelden') > 0
 
     def save_session(self):
         with open(self.cookie_file, 'w') as f:
-            pickle.dump(self.driver.get_cookies(), f)
+            pickle.dump(self.session.cookies, f)
 
     def load_session(self):
         try:
             with open(self.cookie_file) as f:
                 cookies = pickle.load(f)
-                self.new_session_with_cookies(cookies)
+                self.session = Session()
+                self.session.cookies = cookies
                 return self.is_logged_in()
         except IOError:
             return False
@@ -72,6 +77,8 @@ class Kaufland(Shop):
         if not self.is_logged_in(html):
             self.login()
             return self.cart()
+
+        self.save_session()
 
         blob = BeautifulSoup(html, "html.parser")
         r = blob.select('section.product-list')
@@ -102,8 +109,13 @@ class Kaufland(Shop):
             self.login()
             return self.search(term)
 
+        self.save_session()
+
         blob = BeautifulSoup(html, "html.parser")
-        r = blob.select('div.productmatrix')[0]
+        r = blob.select('div.productmatrix')
+        if len(r) == 0:
+            return []
+        r = r[0]
 
         ids = []
         perfect = []
@@ -146,6 +158,7 @@ class Kaufland(Shop):
             ('pageTemplate', 'producttile'),
             ('CSRFToken', token),
         ])
+        self.save_session()
 
     def shelf_life(self, item_link):
         pass
