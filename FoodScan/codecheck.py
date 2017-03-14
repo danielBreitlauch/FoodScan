@@ -15,7 +15,7 @@ class CodeCheck:
 
     @staticmethod
     def url(term):
-        return '{0}?q={1}&OK=Suchen'.format(CodeCheck.base_url, urllib2.quote(term))
+        return '{0}?q={1}&OK=Suchen'.format(CodeCheck.base_url, urllib2.quote(term.encode('utf-8')))
 
     def get_description(self, term):
         url = CodeCheck.url(term)
