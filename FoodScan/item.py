@@ -13,10 +13,7 @@ class ShopItem:
         return str(self.price / 100.0) + u'€ ' + self.name + u' (' + self.link + u')'
 
     def __eq__(self, other):
-        if isinstance(other, ShopItem):
-            return self.name == other.name and self.price == other.price and self.link == other.link
-
-        return NotImplemented
+        return other and self.price == other.price and self.link == other.link
 
     def __ne__(self, other):
         result = self.__eq__(other)
@@ -30,7 +27,7 @@ class ShopItem:
         name_end = string.find(u' (', price_end)
         link_end = string.find(u')', name_end)
 
-        price = float(string[:price_end]) * 100
+        price = int(float(string[:price_end]) * 100)
         name = string[price_end + 2:name_end]
         link = string[name_end + 2:link_end]
 
@@ -84,18 +81,15 @@ class Item:
             for i in self.shop_items:
                 if i == item:
                     self.selected_item = i
-
-            self.selected_item.amount = self.amount
+                    self.selected_item.amount = self.amount
 
     def selected_shop_item(self):
-        self.selected_item.amount = self.amount
+        if self.selected_item:
+            self.selected_item.amount = self.amount
         return self.selected_item
 
     def __eq__(self, other):
-        if isinstance(other, Item):
-            return self.name == other.name
-
-        return NotImplemented
+        return self.name == other.name
 
     def __ne__(self, other):
         result = self.__eq__(other)
