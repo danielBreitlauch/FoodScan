@@ -13,3 +13,5 @@ wunderlist_token = "generated token"
 
 ayn_wunderlist_list_id = 123456789
 bring_export_list_id = 987654321
+
+captcha_client_key = "12345678901234567890"
