@@ -1,17 +1,18 @@
 # -*- coding: utf-8 -*-
 
 import pickle
+import time
 import urllib2
 import urlparse
-from requests import *
-from bs4 import BeautifulSoup
-import time
-from selenium import webdriver
-from selenium.webdriver.common.keys import Keys
 from datetime import datetime
 
-from item import ShopItem
-from shop import Shop
+from bs4 import BeautifulSoup
+from requests import *
+from selenium import webdriver
+from selenium.webdriver.common.keys import Keys
+
+from FoodScan.Shops.shop import Shop
+from FoodScan.item import ShopItem
 
 
 def extract_price(dom_item):
