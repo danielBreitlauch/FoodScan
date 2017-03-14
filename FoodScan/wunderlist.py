@@ -18,6 +18,26 @@ class WuList:
     def check_action(self):
         # self.transfer_bring_list_action()
         self.detect_shop_list_change()
+        self.sync_list_shop()
+
+    def sync_list_shop(self):
+        cart_items = self.shop.cart()
+        tasks = self.client.get_tasks(self.shop_list_id)
+        shop_items = []
+
+        for task in tasks:
+            item = self.item_from_task(task, with_selects=True)
+            shop_item = item.selected_shop_item()
+            if shop_item:
+                shop_items.append(shop_item)
+
+        for shop_item in shop_items:
+            if shop_item not in cart_items:
+                print("Task item without shop item: " + shop_item.name)
+
+        for cart_item in cart_items:
+            if cart_item not in shop_items:
+                print("Cart item without task: " + cart_item.name)
 
     def detect_shop_list_change(self):
         if self.shop_list_rev == self.client.get_list(self.shop_list_id)['revision']:
@@ -38,7 +58,7 @@ class WuList:
         if len(tasks) > 0:
             items = []
             for task in tasks:
-                items.append(self.read_task(task))
+                items.append(self.item_from_task(task))
             self.bring.upload(items)
             for task in tasks:
                 self.client.delete_task(task['id'], task['revision'])
@@ -95,9 +115,14 @@ class WuList:
             self.client.create_note(iid, item.note())
 
         self.shop_items[iid] = item
-        new_revision = self.client.get_task(iid)['revision']
-        self.shop_task_revs[iid] = new_revision
-        self.client.update_task(iid, new_revision, title=item.title())
+        while True:
+            try:
+                new_revision = self.client.get_task(iid)['revision']
+                self.shop_task_revs[iid] = new_revision
+                self.client.update_task(iid, new_revision, title=item.title())
+                break
+            except ValueError:
+                pass
 
     def update_item(self, task):
         print("Update - " + task['title'])
