@@ -18,9 +18,12 @@ class WuList:
         self.shop_items = {}
 
     def check_action(self):
-        # self.transfer_bring_list_action()
-        self.detect_shop_list_change()
-        self.sync_list_shop()
+        try:
+            # self.transfer_bring_list_action()
+            self.detect_shop_list_change()
+            self.sync_list_shop()
+        except Exception, e:
+            self.logger.warn(str(e))
 
     def sync_list_shop(self):
         cart_items = self.shop.cart()
@@ -35,11 +38,11 @@ class WuList:
 
         for shop_item in shop_items:
             if shop_item not in cart_items:
-                self.logger.warn("Task item without shop item: " + shop_item.name)
+                self.logger.warn("Task item without shop item: " + shop_item.name.encode('utf-8'))
 
         for cart_item in cart_items:
             if cart_item not in shop_items:
-                self.logger.warn("Cart item without task: " + cart_item.name)
+                self.logger.warn("Cart item without task: " + cart_item.name.encode('utf-8'))
 
     def detect_shop_list_change(self):
         if self.shop_list_rev == self.client.get_list(self.shop_list_id)['revision']:
@@ -84,13 +87,13 @@ class WuList:
 
     def remove_item_by_id(self, iid):
         item = self.shop_items.pop(iid)
-        self.logger.info("delete - " + item.name)
+        self.logger.info("delete - " + item.name.encode('utf-8'))
 
         if item.synced():
             self.shop.delete(item.selected_shop_item())
 
     def new_item(self, task, with_selects=False):
-        self.logger.info("new - " + task['title'])
+        self.logger.info("new - " + task['title'].encode('utf-8'))
         iid = task['id']
         item = self.item_from_task(task, with_selects=with_selects)
         shop_items = self.shop.search(item.name)
@@ -127,7 +130,7 @@ class WuList:
                 pass
 
     def update_item(self, task):
-        self.logger.info("Update - " + task['title'])
+        self.logger.info("Update - " + task['title'].encode('utf-8'))
         iid = task['id']
         item = self.item_from_task(task, with_selects=True)
         existing = self.shop_items[iid]

@@ -17,7 +17,7 @@ class Barcode:
             try:
                 self.callback(self.scan())
             except Exception, e:
-                self.logger.error(e)
+                self.logger.error(str(e))
 
     def scan(self):
         self.logger.info('Waiting for scanner data')
