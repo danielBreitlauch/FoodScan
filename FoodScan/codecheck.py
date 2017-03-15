@@ -1,26 +1,25 @@
-import urllib2
+from urllib2 import quote
+from requests import get
 from bs4 import BeautifulSoup
 from item import *
-
-
-class CodeNotFound(Exception): pass
-
-
-class CodeInvalid(Exception): pass
+from pysimplelog import Logger
 
 
 class CodeCheck:
 
     base_url = 'http://www.codecheck.info/product.search'
 
+    def __init__(self):
+        self.logger = Logger('Codechecker')
+
     @staticmethod
     def url(term):
-        return '{0}?q={1}&OK=Suchen'.format(CodeCheck.base_url, urllib2.quote(term.encode('utf-8')))
+        return '{0}?q={1}&OK=Suchen'.format(CodeCheck.base_url, quote(term.encode('utf-8')))
 
     def get_description(self, term):
         url = CodeCheck.url(term)
         try:
-            blob = BeautifulSoup(urllib2.urlopen(url).read(), "html.parser")
+            blob = BeautifulSoup(get(url).text, "html.parser")
             ratings, numeric = self.parse_ratings(blob)
 
             return Item(name=self.parse_name(blob),
@@ -29,13 +28,8 @@ class CodeCheck:
                         ingredients=self.parse_ingredients(blob),
                         ratings=ratings,
                         num_rating=numeric)
-        except urllib2.HTTPError, e:
-            if 'UPC/EAN code invalid' in e.msg:
-                raise CodeInvalid(e.msg)
-            elif 'Not found' in e.msg:
-                raise CodeNotFound(e.msg)
-            else:
-                raise
+        except Exception, e:
+            self.logger.warn("Exception while searching for " + term + "\n" + e.message)
 
     def parse_name(self, blob):
         return blob.find("meta", property="og:title")['content']

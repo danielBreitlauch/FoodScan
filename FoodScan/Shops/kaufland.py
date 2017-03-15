@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 
+from pysimplelog import Logger
 import pickle
 import time
-import urllib2
+from urllib2 import quote
 import urlparse
 
 from bs4 import BeautifulSoup
@@ -17,6 +18,7 @@ class Kaufland(Shop):
     search_url_prefix = 'https://shop.kaufland.de/search/?text='
 
     def __init__(self, email, password, captcha_service, cookie_file="kl_cookies"):
+        self.logger = Logger('Kaufland')
         self.captcha_service = captcha_service
         self.base_url = 'https://shop.kaufland.de'
         self.login_url = "https://shop.kaufland.de/login"
@@ -28,10 +30,10 @@ class Kaufland(Shop):
 
     @staticmethod
     def search_url(name):
-        return Kaufland.search_url_prefix + urllib2.quote(name.encode('utf-8'))
+        return Kaufland.search_url_prefix + quote(name.encode('utf-8'))
 
     def login(self):
-        print("Logging in...")
+        self.logger.info("Logging in...")
         self.session = Session()
         html = self.session.get(self.account_url).text
         blob = BeautifulSoup(html, "html.parser")

@@ -39,5 +39,5 @@ class Bring:
             }
         }
 
-        print(post(self.url, data=data, headers=headers).text)
+        post(self.url, data=data, headers=headers)
 

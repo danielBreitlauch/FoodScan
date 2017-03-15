@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 
+from pysimplelog import Logger
 import pickle
 import time
-import urllib2
+from urllib2 import quote
 import urlparse
 from datetime import datetime
 
@@ -28,6 +29,7 @@ class AllYouNeed(Shop):
     search_url_prefix = 'https://www.allyouneedfresh.de/suchen?term='
 
     def __init__(self, email, password, cookie_file="ayn_cookies"):
+        self.logger = Logger('AllYouNeed')
         self.base_url = 'https://www.allyouneedfresh.de'
         self.basket_url = 'https://www.allyouneedfresh.de/warenkorbuebersicht'
         self.take_url = 'https://www.allyouneedfresh.de/responsive/pages/checkout1.jsf'
@@ -40,7 +42,7 @@ class AllYouNeed(Shop):
 
     @staticmethod
     def search_url(name):
-        return AllYouNeed.search_url_prefix + urllib2.quote(name.encode('utf-8'))
+        return AllYouNeed.search_url_prefix + quote(name.encode('utf-8'))
 
     def j_faces_view_state(self, url):
         res = self.session.get(url)
@@ -48,7 +50,7 @@ class AllYouNeed(Shop):
         return blob.find('input', {'name': 'javax.faces.ViewState'}).get('value')
 
     def login(self):
-        print("Logging in...")
+        self.logger.info("Logging in...")
         self.session = Session()
         self.driver.get(self.base_url)
         time.sleep(1)
@@ -167,7 +169,7 @@ class AllYouNeed(Shop):
         ccc = ccc.find_element_by_class_name('product-cart')
         inps = ccc.find_elements_by_tag_name('input')
         if len(inps) == 0 or not inps[0].is_displayed():
-            print("taking..")
+            self.logger.info("taking..")
             ccc = ccc.find_element_by_tag_name('a')
             ccc.click()
             time.sleep(3)
