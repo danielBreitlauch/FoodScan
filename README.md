@@ -35,3 +35,10 @@ Until then...
 ```
 python ./setup.py install
 ```
+
+Run
+--------
+
+```
+python main.py
+```
