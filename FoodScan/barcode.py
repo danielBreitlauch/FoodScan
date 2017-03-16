@@ -1,6 +1,8 @@
 import struct
 import select
 import thread
+import traceback
+
 from pysimplelog import Logger
 
 
@@ -16,8 +18,8 @@ class Barcode:
         while True:
             try:
                 self.callback(self.scan())
-            except Exception, e:
-                self.logger.error(str(e))
+            except Exception:
+                traceback.print_exc()
 
     def scan(self):
         self.logger.info('Waiting for scanner data')

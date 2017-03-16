@@ -2,6 +2,7 @@
 from item import *
 import wunderpy2
 from pysimplelog import Logger
+import traceback
 
 
 class WuList:
@@ -22,8 +23,8 @@ class WuList:
             # self.transfer_bring_list_action()
             self.detect_shop_list_change()
             self.sync_list_shop()
-        except Exception, e:
-            self.logger.warn(str(e))
+        except Exception:
+            traceback.print_exc()
 
     def sync_list_shop(self):
         cart_items = self.shop.cart()
