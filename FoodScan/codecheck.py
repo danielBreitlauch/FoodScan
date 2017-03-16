@@ -30,6 +30,7 @@ class CodeCheck:
                         num_rating=numeric)
         except Exception, e:
             self.logger.warn("Exception while searching for " + term + "\n" + str(e))
+            return None
 
     def parse_name(self, blob):
         return blob.find("meta", property="og:title")['content']

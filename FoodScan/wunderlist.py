@@ -36,10 +36,9 @@ class WuList:
             shop_item = item.selected_shop_item()
             if shop_item:
                 shop_items.append(shop_item)
-
-        for shop_item in shop_items:
-            if shop_item not in cart_items:
-                self.logger.warn("Task item without shop item: " + shop_item.name.encode('utf-8'))
+                if shop_item not in cart_items:
+                    self.logger.warn("Task item without shop item: " + shop_item.name.encode('utf-8'))
+                    self.update_item(task)
 
         for cart_item in cart_items:
             if cart_item not in shop_items:
@@ -71,6 +70,8 @@ class WuList:
 
     def add_barcode(self, barcode):
         item = self.code_check.get_description(barcode)
+        if not item:
+            return
 
         for task in self.client.get_tasks(self.shop_list_id):
             if item.name in task['title']:
@@ -98,7 +99,7 @@ class WuList:
         iid = task['id']
         item = self.item_from_task(task, with_selects=with_selects)
         shop_items = self.shop.search(item.name)
-        item.add_shop_items(shop_items)
+        item.set_shop_items(shop_items)
 
         if len(shop_items) == 1 and not item.synced():
             item.select_shop_item(item.shop_items[0])
