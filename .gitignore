@@ -3,3 +3,4 @@ config.py
 *cookies*
 chromedriver
 ghostdriver*
+simplelog.log
