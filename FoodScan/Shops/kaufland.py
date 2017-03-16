@@ -15,7 +15,7 @@ from FoodScan.item import ShopItem
 
 class Kaufland(Shop):
 
-    search_url_prefix = 'https://shop.kaufland.de/search/?text='
+    search_url_prefix = 'https://shop.kaufland.de/search?pageSize=48&sort=relevance&text='
 
     def __init__(self, email, password, captcha_service, cookie_file="kl_cookies"):
         self.logger = Logger('Kaufland')
@@ -138,13 +138,14 @@ class Kaufland(Shop):
             item = ShopItem(article_id, 1, title, price, link)
             ids.append(item)
 
-            match = True
-            for criteria in term.split():
-                if criteria.lower() not in title.lower():
-                    match = False
-                    break
-            if match:
-                perfect.append(item)
+            if len(term.split()) > 1:
+                match = True
+                for criteria in term.split():
+                    if criteria.lower() not in title.lower():
+                        match = False
+                        break
+                if match:
+                    perfect.append(item)
 
         return perfect if perfect else ids
 
