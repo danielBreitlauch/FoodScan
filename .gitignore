@@ -4,3 +4,4 @@ config.py
 chromedriver
 ghostdriver*
 simplelog.log
+*.pyc
