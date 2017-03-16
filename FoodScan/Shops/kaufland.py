@@ -97,6 +97,9 @@ class Kaufland(Shop):
             article_id = amount['data-dynamicblock']
             amount = int(amount.find('input', {'name': 'quantity'}).get('value'))
             price = i.find('div', {'data-dynamiccontent': 'prices'})
+            red = price.find('span', {'class': 'product-list__reduced-price'})
+            if red:
+                price = red
             price = price.text.replace(u'€', u'').strip()
             price = int(float(price) * 100)
 
