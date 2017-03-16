@@ -54,19 +54,19 @@ class Item:
     def inc_amount(self, amount=1):
         self.amount += amount
 
-    def add_shop_items(self, shop_items):
-        if self.shop_items is None:
-            self.shop_items = []
-
+    def set_shop_items(self, shop_items):
+        self.shop_items = []
+        selected_replaced = False
         for item in shop_items:
             item.amount = self.amount
+            self.shop_items.append(item)
 
-            if item in self.shop_items:
-                self.shop_items.remove(item)
             if item == self.selected_item:
                 self.selected_item = item
+                selected_replaced = True
 
-            self.shop_items.append(item)
+        if self.selected_item and not selected_replaced:
+            self.selected_item = None
 
         if len(shop_items) == 1:
             self.selected_item = self.shop_items[0]
