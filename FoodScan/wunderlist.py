@@ -38,7 +38,9 @@ class WuList:
                 shop_items.append(shop_item)
                 if shop_item not in cart_items:
                     self.logger.warn("Task item without shop item: " + shop_item.name.encode('utf-8'))
-                    self.update_item(task)
+                    existing = self.shop_items[task['id']]
+                    if existing.selected_shop_item():
+                        self.shop.take(existing.selected_shop_item())
 
         for cart_item in cart_items:
             if cart_item not in shop_items:
@@ -101,8 +103,7 @@ class WuList:
         shop_items = self.shop.search(item.name)
         item.set_shop_items(shop_items)
 
-        if len(shop_items) == 1 and not item.synced():
-            item.select_shop_item(item.shop_items[0])
+        if item.selected_item:
             self.shop.take(item.selected_shop_item())
 
         checked = []
