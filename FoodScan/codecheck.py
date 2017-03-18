@@ -49,6 +49,9 @@ class CodeCheck:
 
     def parse_ratings(self, blob):
         r = blob.find('div', {'class': "area spacing ingredient-rating"})
+        if not r:
+            return [], 0
+
         ratings = r.findAll('div', {'class': 'c c-2 rating-color'})
         rate = r.findAll('div', {'class': 'c c-3 rating-color'})
         numbers = r.findAll('div', {'class': 'rating-group-header'})
