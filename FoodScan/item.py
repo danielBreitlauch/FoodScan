@@ -21,6 +21,9 @@ class ShopItem:
             return result
         return not result
 
+    def __hash__(self):
+        return hash(self.name)
+
     @classmethod
     def parse(cls, string):
         price_end = string.find(u'€ ')
@@ -36,8 +39,9 @@ class ShopItem:
 
 class Item:
 
-    def __init__(self, name, cc_price=None, ingredients=None, ratings=None, cc_url=None, amount=1, num_rating=0):
+    def __init__(self, name, sub_name=None, cc_price=None, ingredients=None, ratings=None, cc_url=None, amount=1, num_rating=0):
         self.name = name
+        self.sub_name = sub_name
         self.cc_price = cc_price
         self.ingredients = ingredients
         self.ratings_data = ratings
@@ -120,7 +124,12 @@ class Item:
         return title
 
     def note(self):
-        note = '* ' + self.cc_url + '\n\n'
+        note = ''
+
+        if self.sub_name:
+            note += self.sub_name + '\n\n'
+
+        note += '* ' + self.cc_url + '\n\n'
 
         if self.ratings_data:
             for rating in self.ratings_data:
@@ -134,15 +143,15 @@ class Item:
     @classmethod
     def parse(cls, title, notes, completed_subs):
         name, amount, price, num_rating = cls.parse_title(title)
-        cc_url, ingredients, ratings = cls.parse_notes(notes)
+        cc_url, ingredients, ratings, sub_name = cls.parse_notes(notes)
         shop_item = cls.parse_completed_subs(completed_subs)
 
         item = Item(name=name,
+                    sub_name=sub_name,
                     ingredients=ingredients,
                     cc_url=cc_url,
                     ratings=ratings,
-                    amount=amount,
-                    num_rating=num_rating)
+                    amount=amount)
 
         if shop_item:
             item.select_shop_item(shop_item)
@@ -187,16 +196,24 @@ class Item:
 
     @classmethod
     def parse_notes(cls, notes):
-        url_pos = notes.find('\n\n')
-        if url_pos <= 0:
-            return None, None, None
+        url_pos_start = notes.find('* ')
 
-        url = notes[2:url_pos]
+        if url_pos_start > 0:
+            sub_name = notes[0: notes.find('\n\n')]
+            url_pos_end = notes.find('\n\n', url_pos_start)
+        else:
+            sub_name = None
+            url_pos_end = notes.find('\n\n')
+
+        if url_pos_start <= 0:
+            return None, None, None, None
+
+        url = notes[url_pos_start:url_pos_end]
 
         if notes.find("\nInhalt:\n") < 0:
-            return url, None, None
+            return url, None, None, sub_name
 
-        notes = notes[url_pos:]
+        notes = notes[url_pos_end:]
         ratings_end = notes.find("\nInhalt:\n")
 
         end = 0
@@ -208,7 +225,7 @@ class Item:
             ratings_data.append(rating)
 
         ingredients = notes[ratings_end + 9:]
-        return url, ingredients, ratings_data
+        return url, ingredients, ratings_data, sub_name
 
     @classmethod
     def parse_completed_subs(cls, completed_subs):

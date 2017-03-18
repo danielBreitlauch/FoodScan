@@ -23,6 +23,7 @@ class CodeCheck:
             ratings, numeric = self.parse_ratings(blob)
 
             return Item(name=self.parse_name(blob),
+                        sub_name=self.parse_sub_name(blob),
                         cc_price=self.parse_price(blob),
                         cc_url=url,
                         ingredients=self.parse_ingredients(blob),
@@ -34,6 +35,9 @@ class CodeCheck:
 
     def parse_name(self, blob):
         return blob.find("meta", property="og:title")['content']
+
+    def parse_sub_name(self, blob):
+        return blob.find('h3', {'class': 'page-title-subline'}).text
 
     def parse_ingredients(self, blob):
         return blob.find('span', {'class': 'rated-ingredients'}).text
