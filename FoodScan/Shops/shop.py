@@ -40,7 +40,7 @@ class Shop:
         raise NotImplementedError('users must define __str__ to use this base class')
 
     @abc.abstractmethod
-    def search(self, term):
+    def search(self, term, sub_term=None):
         raise NotImplementedError('users must define __str__ to use this base class')
 
     @abc.abstractmethod

@@ -125,7 +125,7 @@ class AllYouNeed(Shop):
             res.append(ShopItem(article_id, amount, name, price, link))
         return res
 
-    def search(self, name):
+    def search(self, term, sub_term=None):
         html = self.session.get(AllYouNeed.search_url(name)).text
         blob = BeautifulSoup(html, "html.parser")
         r = blob.select('div.product-box.item')

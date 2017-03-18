@@ -100,7 +100,7 @@ class WuList:
         self.logger.info("new - " + task['title'].encode('utf-8'))
         iid = task['id']
         item = self.item_from_task(task, with_selects=with_selects)
-        shop_items = self.shop.search(item.name)
+        shop_items = self.shop.search(item.name, item.sub_name)
         item.set_shop_items(shop_items)
 
         if item.selected_item:

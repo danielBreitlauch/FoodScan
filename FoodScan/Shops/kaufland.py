@@ -108,22 +108,30 @@ class Kaufland(Shop):
 
         return ids
 
-    def search(self, term):
+    def search(self, term, sub_term=None):
         html = self.session.get(Kaufland.search_url(term)).text
         if not self.is_logged_in(html):
             self.login()
-            return self.search(term)
+            return self.search(term, sub_term)
 
         self.save_session()
 
         blob = BeautifulSoup(html, "html.parser")
         r = blob.select('div.productmatrix')
         if len(r) == 0:
-            return []
-        r = r[0]
+            if sub_term:
+                return self.search(term + " " + sub_term)
 
+            if len(term.split()) == 1:
+                return []
+            ids = []
+            for criteria in term.split():
+                if len(criteria) > 1:
+                    ids += self.search(criteria)
+            return self.order_by_matches(term, ids, max=20, perfect=0.6, cut_off=0.25)
+
+        r = r[0]
         ids = []
-        perfect = []
         for i in r.findAll('article'):
             a = i.find('a')
             article_id = i['data-dynamicblock'].split('_')[0]
@@ -138,16 +146,29 @@ class Kaufland(Shop):
             item = ShopItem(article_id, 1, title, price, link)
             ids.append(item)
 
-            if len(term.split()) > 1:
-                match = True
-                for criteria in term.split():
-                    if criteria.lower() not in title.lower():
-                        match = False
-                        break
-                if match:
-                    perfect.append(item)
+        return self.order_by_matches(term, ids)
 
-        return perfect if perfect else ids
+    def order_by_matches(self, term, ids, max=None, perfect=None, cut_off=None):
+        fit = {}
+        perfect_fit = {}
+        terms = len(term.split())
+        for item in ids:
+            match = 0
+            for criteria in term.split():
+                if criteria.lower() in item.name.lower():
+                    match += 1
+            if not cut_off or match > terms * cut_off:
+                fit[item] = match
+            if perfect and match > terms * perfect:
+                perfect_fit[item] = match
+
+        if len(perfect_fit) > 0:
+            fit = perfect_fit
+
+        ordered = sorted(fit, key=fit.__getitem__, reverse=True)
+        if max:
+            ordered = ordered[:max]
+        return ordered
 
     def take(self, item):
         html = self.session.get(Kaufland.search_url(item.name)).text
