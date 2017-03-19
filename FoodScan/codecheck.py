@@ -70,7 +70,7 @@ class CodeCheck:
                 num += 1
                 rate_list.append(ratings[i].text + ": " + rate[i].text)
 
-        return rate_list, agg / num
+        return rate_list, agg / num if num else 0
 
     def map_rating_class(self, clazz):
         num = int(clazz.replace('pr-rating-', '')) / 100
