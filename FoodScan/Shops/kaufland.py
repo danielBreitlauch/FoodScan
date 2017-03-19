@@ -116,37 +116,42 @@ class Kaufland(Shop):
 
         self.save_session()
 
+        ids = self.parse_search(html)
+
+        if len(ids) > 0:
+            return self.order_by_matches(term, ids)
+
+        if sub_term:
+            return self.search(term + " " + sub_term)
+
+        if len(term.split()) == 1:
+            return []
+
+        for criteria in term.split():
+            if len(criteria) > 1:
+                ids += self.search(criteria)
+        return self.order_by_matches(term, ids, max=20, perfect=0.6, cut_off=0.25)
+
+    def parse_search(self, html):
         blob = BeautifulSoup(html, "html.parser")
-        r = blob.select('div.productmatrix')
-        if len(r) == 0:
-            if sub_term:
-                return self.search(term + " " + sub_term)
-
-            if len(term.split()) == 1:
-                return []
-            ids = []
-            for criteria in term.split():
-                if len(criteria) > 1:
-                    ids += self.search(criteria)
-            return self.order_by_matches(term, ids, max=20, perfect=0.6, cut_off=0.25)
-
-        r = r[0]
         ids = []
-        for i in r.findAll('article'):
-            a = i.find('a')
-            article_id = i['data-dynamicblock'].split('_')[0]
-            link = urlparse.urljoin(self.base_url, a['href'])
-            title = a.find('p', {'class': 'product-tile__infos--title'}).text.strip()
-            price = a.find('div', {'class': 'product-tile__price--regular'})
-            if not price:
-                price = a.find('div', {'class': 'product-tile__price--reduced'})
-            price = price.text.replace(u'€', u'').strip()
-            price = int(float(price) * 100)
+        r = blob.select('div.productmatrix')
+        if len(r) > 0:
+            r = r[0]
+            for i in r.findAll('article'):
+                a = i.find('a')
+                article_id = i['data-dynamicblock'].split('_')[0]
+                link = urlparse.urljoin(self.base_url, a['href'])
+                title = a.find('p', {'class': 'product-tile__infos--title'}).text.strip()
+                price = a.find('div', {'class': 'product-tile__price--regular'})
+                if not price:
+                    price = a.find('div', {'class': 'product-tile__price--reduced'})
+                price = price.text.replace(u'€', u'').strip()
+                price = int(float(price) * 100)
 
-            item = ShopItem(article_id, 1, title, price, link)
-            ids.append(item)
-
-        return self.order_by_matches(term, ids)
+                item = ShopItem(article_id, 1, title, price, link)
+                ids.append(item)
+        return ids
 
     def order_by_matches(self, term, ids, max=None, perfect=None, cut_off=None):
         fit = {}
