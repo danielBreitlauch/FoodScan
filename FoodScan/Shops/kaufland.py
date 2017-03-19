@@ -74,15 +74,23 @@ class Kaufland(Shop):
         except IOError:
             return False
 
+    def get(self, url):
+        html = self.session.get(url).text
+        if self.is_logged_in(html):
+            self.save_session()
+            return html
+
+        self.login()
+        html = self.session.get(url).text
+        if self.is_logged_in(html):
+            self.save_session()
+            return html
+
+        self.logger.error("Can not log in")
+        exit(1)
+
     def cart(self):
-        html = self.session.get(self.basket_url).text
-        if not self.is_logged_in(html):
-            self.login()
-            return self.cart()
-
-        self.save_session()
-
-        blob = BeautifulSoup(html, "html.parser")
+        blob = BeautifulSoup(self.get(self.basket_url), "html.parser")
         r = blob.select('section.product-list')
         if len(r) == 0:
             return []
@@ -109,13 +117,7 @@ class Kaufland(Shop):
         return ids
 
     def search(self, term, sub_term=None):
-        html = self.session.get(Kaufland.search_url(term)).text
-        if not self.is_logged_in(html):
-            self.login()
-            return self.search(term, sub_term)
-
-        self.save_session()
-
+        html = self.get(Kaufland.search_url(term))
         ids = self.parse_search(html)
 
         if len(ids) > 0:
@@ -176,11 +178,7 @@ class Kaufland(Shop):
         return ordered
 
     def take(self, item):
-        html = self.session.get(Kaufland.search_url(item.name)).text
-        if not self.is_logged_in(html):
-            self.login()
-            return self.take(item)
-
+        html = self.get(Kaufland.search_url(item.name))
         blob = BeautifulSoup(html, "html.parser")
         token = blob.find('input', {'name': 'CSRFToken'}).get('value')
 
