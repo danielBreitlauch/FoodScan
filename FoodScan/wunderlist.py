@@ -18,15 +18,26 @@ class WuList:
         self.shop_task_revs = {}
         self.shop_items = {}
 
-    def check_action(self):
+    def sync_shop_list(self):
         try:
-            # self.transfer_bring_list_action()
-            self.detect_shop_list_change()
-            self.sync_list_shop()
+            if self.shop_list_rev == self.client.get_list(self.shop_list_id)['revision']:
+                return
+
+            new, changed, deleted_ids = self.detect_changed_tasks()
+            for iid in deleted_ids:
+                self.remove_item_by_id(iid)
+
+            for task in new:
+                self.new_item(task, with_selects=True)
+
+            for task in changed:
+                self.update_item(task)
+
+            self.detect_cart_list_differences()
         except Exception:
             traceback.print_exc()
 
-    def sync_list_shop(self):
+    def detect_cart_list_differences(self):
         cart_items = self.shop.cart()
         tasks = self.client.get_tasks(self.shop_list_id)
         shop_items = []
@@ -45,20 +56,6 @@ class WuList:
         for cart_item in cart_items:
             if cart_item not in shop_items:
                 self.logger.warn("Cart item without task: " + cart_item.name.encode('utf-8'))
-
-    def detect_shop_list_change(self):
-        if self.shop_list_rev == self.client.get_list(self.shop_list_id)['revision']:
-            return
-
-        new, changed, deleted_ids = self.detect_changed_tasks()
-        for iid in deleted_ids:
-            self.remove_item_by_id(iid)
-
-        for task in new:
-            self.new_item(task, with_selects=True)
-
-        for task in changed:
-            self.update_item(task)
 
     def transfer_bring_list_action(self):
         tasks = self.client.get_tasks(self.bring_export_list_id)

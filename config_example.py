@@ -11,7 +11,10 @@ bring_cookie = '__utmt=1; _gat_bringWidgetTrackerImport=1; __utma=xxxxxxx; __utm
 wunderlist_client_id = "client_id"
 wunderlist_token = "generated token"
 
-ayn_wunderlist_list_id = 123456789
+shopping_wunderlist_list_id = 123456789
 bring_export_list_id = 987654321
 
-captcha_client_key = "12345678901234567890"
+kaufland_email = "you@email.net"
+kaufland_password = "**************"
+
+anti_captcha_key = "12345678901234567890"

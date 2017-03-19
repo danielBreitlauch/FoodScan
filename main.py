@@ -12,11 +12,11 @@ from config import *
 
 b = Bring(bring_user_uuid, bring_api_key, bring_authorization, bring_cookie)
 cc = CodeCheck()
-kl = Kaufland(kaufland_email, kaufland_password, AntiCaptcha(captcha_client_key))
+kl = Kaufland(kaufland_email, kaufland_password, AntiCaptcha(anti_captcha_key))
 # ayn = AllYouNeed(all_you_need_email, all_you_need_password)
 
-l = WuList(kl, cc, b, wunderlist_client_id, wunderlist_token, ayn_wunderlist_list_id, bring_export_list_id)
-bc = Barcode(barcode_device, l.add_barcode)
+l = WuList(kl, cc, b, wunderlist_client_id, wunderlist_token, shopping_wunderlist_list_id, bring_export_list_id)
+#bc = Barcode(barcode_device, l.add_barcode)
 while True:
-    l.check_action()
+    l.sync_shop_list()
     time.sleep(10)
