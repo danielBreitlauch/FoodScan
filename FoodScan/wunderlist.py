@@ -21,7 +21,7 @@ class WuList:
     def sync_shop_list(self):
         try:
             if self.shop_list_rev == self.client.get_list(self.shop_list_id)['revision']:
-                return
+                return False
 
             new, changed, deleted_ids = self.detect_changed_tasks()
             for iid in deleted_ids:
@@ -33,14 +33,17 @@ class WuList:
             for task in changed:
                 self.update_item(task)
 
-            self.detect_cart_list_differences()
+            #change = self.detect_cart_list_differences()
+            return len(new) + len(changed) + len(deleted_ids) > 0
         except Exception:
             traceback.print_exc()
+            return False
 
     def detect_cart_list_differences(self):
         cart_items = self.shop.cart()
         tasks = self.client.get_tasks(self.shop_list_id)
         shop_items = []
+        change = False
 
         for task in tasks:
             item = self.item_from_task(task, with_selects=True)
@@ -49,6 +52,7 @@ class WuList:
                 shop_items.append(shop_item)
                 if shop_item not in cart_items:
                     self.logger.warn("Task item without shop item: " + shop_item.name.encode('utf-8'))
+                    change = True
                     existing = self.shop_items[task['id']]
                     if existing.selected_shop_item():
                         self.shop.take(existing.selected_shop_item())
@@ -56,6 +60,7 @@ class WuList:
         for cart_item in cart_items:
             if cart_item not in shop_items:
                 self.logger.warn("Cart item without task: " + cart_item.name.encode('utf-8'))
+        return change
 
     def transfer_bring_list_action(self):
         tasks = self.client.get_tasks(self.bring_export_list_id)
@@ -81,10 +86,7 @@ class WuList:
                 return
 
         task = self.client.create_task(self.shop_list_id, title=item.title())
-        iid = task['id']
-        self.client.create_note(iid, item.note())
-        self.shop_items[iid] = item
-        self.shop_task_revs[iid] = task['revision']
+        self.client.create_note(task['id'], item.note())
 
     def remove_item_by_id(self, iid):
         item = self.shop_items.pop(iid)
@@ -114,9 +116,11 @@ class WuList:
             self.client.create_subtask(iid, unicode(shop_item), completed=comp)
 
         notes = self.client.get_task_notes(iid)
-        if len(notes) == 1 and notes[0]['content'] != item.note():
-            self.client.delete_note(notes[0]['id'], notes[0]['revision'])
-        if len(notes) == 0:
+        if len(notes) == 1:
+            if notes[0]['content'] != item.note():
+                self.client.delete_note(notes[0]['id'], notes[0]['revision'])
+                self.client.create_note(iid, item.note())
+        else:
             self.client.create_note(iid, item.note())
 
         self.shop_items[iid] = item
