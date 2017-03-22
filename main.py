@@ -18,8 +18,6 @@ kl = Kaufland(kaufland_email, kaufland_password, AntiCaptcha(anti_captcha_key))
 l = WuList(kl, cc, b, wunderlist_client_id, wunderlist_token, shopping_wunderlist_list_id, bring_export_list_id)
 bc = Barcode(barcode_device, l.add_barcode)
 
-l.add_barcode("4011800523213")
-
 wait = [10, 30, 60, 120, 240, 480]
 wait_index = 0
 while True:
