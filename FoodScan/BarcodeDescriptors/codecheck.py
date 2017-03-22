@@ -1,23 +1,25 @@
 from urllib2 import quote
 from requests import get
 from bs4 import BeautifulSoup
-from item import *
+
+from FoodScan.BarcodeDescriptors.barcodeDescriptor import BarcodeDescriptor
+from FoodScan.item import *
 from pysimplelog import Logger
 
 
-class CodeCheck:
-
-    base_url = 'http://www.codecheck.info/product.search'
+class CodeCheck(BarcodeDescriptor):
 
     def __init__(self):
+        BarcodeDescriptor.__init__(self)
         self.logger = Logger('Codechecker')
 
     @staticmethod
-    def url(term):
-        return '{0}?q={1}&OK=Suchen'.format(CodeCheck.base_url, quote(term.encode('utf-8')))
+    def url(barcode):
+        base_url = 'http://www.codecheck.info/product.search'
+        return '{0}?q={1}&OK=Suchen'.format(base_url, quote(barcode.encode('utf-8')))
 
-    def get_description(self, term):
-        url = CodeCheck.url(term)
+    def item(self, barcode):
+        url = CodeCheck.url(barcode)
         try:
             blob = BeautifulSoup(get(url).text, "html.parser")
             ratings, numeric = self.parse_ratings(blob)
@@ -25,12 +27,12 @@ class CodeCheck:
             return Item(name=self.parse_name(blob),
                         sub_name=self.parse_sub_name(blob),
                         cc_price=self.parse_price(blob),
-                        cc_url=url,
+                        url=url,
                         ingredients=self.parse_ingredients(blob),
                         ratings=ratings,
                         num_rating=numeric)
         except Exception, e:
-            self.logger.warn("Exception while searching for " + term + "\n" + str(e))
+            self.logger.warn("Exception while searching for " + barcode + "\n" + str(e))
             return None
 
     def parse_name(self, blob):
@@ -45,6 +47,9 @@ class CodeCheck:
     def parse_price(self, blob):
         r = blob.find('div', {'class': "area", 'id': "price-container"})
         r = r.find('div', {'class': "lighter-right"})
+        if not r:
+            return None
+
         r.span.clear()
         price = r.text.replace('EUR', '').strip()
         p = price.split(',')
@@ -78,6 +83,3 @@ class CodeCheck:
             return 0
         else:
             return num
-
-
-from item import *

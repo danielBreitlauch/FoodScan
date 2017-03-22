@@ -39,7 +39,7 @@ class ShopItem:
 
 class Item:
 
-    def __init__(self, name, sub_name=None, cc_price=None, ingredients=None, ratings=None, cc_url=None, amount=1, num_rating=0):
+    def __init__(self, name, sub_name=None, cc_price=None, ingredients=None, ratings=None, url=None, amount=1, num_rating=0):
         self.name = name
         self.sub_name = sub_name
         self.cc_price = cc_price
@@ -49,11 +49,11 @@ class Item:
         self.amount = amount
         self.shop_items = None
         self.selected_item = None
-        if cc_url:
-            self.cc_url = cc_url
+        if url:
+            self.url = url
         else:
-            from codecheck import CodeCheck
-            self.cc_url = CodeCheck.url(self.name)
+            from FoodScan.BarcodeDescriptors.codecheck import CodeCheck
+            self.url = CodeCheck.url(self.name)
 
     def inc_amount(self, amount=1):
         self.amount += amount
@@ -129,7 +129,7 @@ class Item:
         if self.sub_name:
             note += self.sub_name + '\n\n'
 
-        note += '* ' + self.cc_url + '\n\n'
+        note += '* ' + self.url + '\n\n'
 
         if self.ratings_data:
             for rating in self.ratings_data:
@@ -149,7 +149,7 @@ class Item:
         item = Item(name=name,
                     sub_name=sub_name,
                     ingredients=ingredients,
-                    cc_url=cc_url,
+                    url=cc_url,
                     ratings=ratings,
                     amount=amount)
 

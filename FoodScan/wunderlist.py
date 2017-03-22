@@ -6,11 +6,11 @@ import traceback
 
 
 class WuList:
-    def __init__(self, shop, code_check, bring, client_id, token, shop_list_id, bring_export_list_id):
+    def __init__(self, shop, barcode_descriptor, bring, client_id, token, shop_list_id, bring_export_list_id):
         self.logger = Logger('Wunderlist')
         self.client = wunderpy2.WunderApi().get_client(token, client_id)
         self.bring = bring
-        self.code_check = code_check
+        self.barcode_descriptor = barcode_descriptor
         self.shop = shop
         self.bring_export_list_id = bring_export_list_id
         self.shop_list_id = shop_list_id
@@ -73,7 +73,7 @@ class WuList:
                 self.client.delete_task(task['id'], task['revision'])
 
     def add_barcode(self, barcode):
-        item = self.code_check.get_description(barcode)
+        item = self.barcode_descriptor.item(barcode)
         if not item:
             return
 
