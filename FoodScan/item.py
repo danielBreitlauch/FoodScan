@@ -198,6 +198,9 @@ class Item:
     def parse_notes(cls, notes):
         url_pos_start = notes.find('* ')
 
+        if url_pos_start < 0:
+            return None, None, None, None
+
         if url_pos_start > 0:
             sub_name = notes[0: notes.find('\n\n')]
             url_pos_end = notes.find('\n\n', url_pos_start)
@@ -205,15 +208,12 @@ class Item:
             sub_name = None
             url_pos_end = notes.find('\n\n')
 
-        if url_pos_start <= 0:
-            return None, None, None, None
-
-        url = notes[url_pos_start:url_pos_end]
+        url = notes[url_pos_start+2:url_pos_end]
 
         if notes.find("\nInhalt:\n") < 0:
             return url, None, None, sub_name
 
-        notes = notes[url_pos_end:]
+        notes = notes[url_pos_end+2:]
         ratings_end = notes.find("\nInhalt:\n")
 
         end = 0
