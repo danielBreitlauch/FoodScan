@@ -126,7 +126,7 @@ class AllYouNeed(Shop):
         return res
 
     def search(self, term, sub_term=None):
-        html = self.session.get(AllYouNeed.search_url(name)).text
+        html = self.session.get(AllYouNeed.search_url(term)).text
         blob = BeautifulSoup(html, "html.parser")
         r = blob.select('div.product-box.item')
 
@@ -150,7 +150,7 @@ class AllYouNeed(Shop):
                     item = ShopItem(article_id, 1, desc, price, link)
                     ids.append(item)
                     match = True
-                    for criteria in name.split():
+                    for criteria in term.split():
                         if criteria.lower() not in desc.lower():
                             match = False
                             break
