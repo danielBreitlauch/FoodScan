@@ -1,52 +1,82 @@
 # -*- coding: utf-8 -*-
-from item import *
-import wunderpy2
-from pysimplelog import Logger
+from thread import start_new_thread
+from time import sleep
 import traceback
+from pysimplelog import Logger
+from FoodScan.item import ShopItem
+
+from werkzeug.wrappers import Request, Response
+from werkzeug.serving import run_simple
 
 
-class WuList:
-    def __init__(self, shop, barcode_descriptor, bring, client_id, token, shop_list_id, bring_export_list_id):
-        self.logger = Logger('Wunderlist')
-        self.client = wunderpy2.WunderApi().get_client(token, client_id)
-        self.bring = bring
-        self.barcode_descriptor = barcode_descriptor
+class ShopSync:
+    def __init__(self, shop, wu_list, shop_list_id, web_hook_url=None, web_server_ip=None, web_server_port=8080, async=True):
+        self.logger = Logger('ShopSync')
         self.shop = shop
-        self.bring_export_list_id = bring_export_list_id
+        self.wu_list = wu_list
         self.shop_list_id = shop_list_id
         self.shop_list_rev = 0
         self.shop_task_revs = {}
         self.shop_items = {}
+        if web_hook_url:
+            self.web_hook_url = web_hook_url
+            self.web_server_ip = web_server_ip
+            self.web_server_port = web_server_port
+            function = self.start_hook
+        else:
+            function = self.listen
+        if async:
+            start_new_thread(function, ())
+        else:
+            function()
+
+    def start_hook(self):
+        run_simple(self.web_server_ip, self.web_server_port, self.hook)
+        self.wu_list.create_web_hook(self.shop_list_id, self.web_hook_url, self.web_server_port)
+
+    @Request.application
+    def hook(self, _):
+        self.sync_shop_list()
+        return Response()
+
+    def listen(self):
+        wait = [10, 30, 60, 120, 240, 480]
+        wait_index = 0
+        while True:
+            try:
+                change = self.sync_shop_list()
+                if change:
+                    wait_index = 0
+                else:
+                    sleep(wait[wait_index])
+                    wait_index = min(wait_index + 1, len(wait) - 1)
+            except Exception:
+                traceback.print_exc()
 
     def sync_shop_list(self):
-        try:
-            if self.shop_list_rev == self.client.get_list(self.shop_list_id)['revision']:
-                return False
-
-            new, changed, deleted_ids = self.detect_changed_tasks()
-            for iid in deleted_ids:
-                self.remove_item_by_id(iid)
-
-            for task in new:
-                self.new_item(task, with_selects=True)
-
-            for task in changed:
-                self.update_item(task)
-
-            #change = self.detect_cart_list_differences()
-            return len(new) + len(changed) + len(deleted_ids) > 0
-        except Exception:
-            traceback.print_exc()
+        if self.shop_list_rev == self.wu_list.client.get_list(self.shop_list_id)['revision']:
             return False
+
+        new, changed, deleted_ids = self.detect_changed_tasks()
+        for iid in deleted_ids:
+            self.remove_item_by_id(iid)
+
+        for task in new:
+            self.new_item(task, with_selects=True)
+
+        for task in changed:
+            self.update_item(task)
+
+        return len(new) + len(changed) + len(deleted_ids) > 0
 
     def detect_cart_list_differences(self):
         cart_items = self.shop.cart()
-        tasks = self.client.get_tasks(self.shop_list_id)
+        tasks = self.wu_list.client.get_tasks(self.shop_list_id)
         shop_items = []
         change = False
 
         for task in tasks:
-            item = self.item_from_task(task, with_selects=True)
+            item = self.wu_list.item_from_task(task, with_selects=True)
             shop_item = item.selected_shop_item()
             if shop_item:
                 shop_items.append(shop_item)
@@ -62,32 +92,6 @@ class WuList:
                 self.logger.warn("Cart item without task: " + cart_item.name.encode('utf-8'))
         return change
 
-    def transfer_bring_list_action(self):
-        tasks = self.client.get_tasks(self.bring_export_list_id)
-        if len(tasks) > 0:
-            items = []
-            for task in tasks:
-                items.append(self.item_from_task(task))
-            self.bring.upload(items)
-            for task in tasks:
-                self.client.delete_task(task['id'], task['revision'])
-
-    def add_barcode(self, barcode):
-        item = self.barcode_descriptor.item(barcode)
-        if not item:
-            return
-
-        for task in self.client.get_tasks(self.shop_list_id):
-            if item.name in task['title']:
-                existing = self.item_from_task(task)
-                existing.inc_amount()
-                self.client.update_task(task['id'], task['revision'], title=existing.title())
-                # next round will detect change and update internal items and shop
-                return
-
-        task = self.client.create_task(self.shop_list_id, title=item.title())
-        self.client.create_note(task['id'], item.note())
-
     def remove_item_by_id(self, iid):
         item = self.shop_items.pop(iid)
         self.logger.info("delete - " + item.name.encode('utf-8'))
@@ -98,7 +102,7 @@ class WuList:
     def new_item(self, task, with_selects=False):
         self.logger.info("new - " + task['title'].encode('utf-8'))
         iid = task['id']
-        item = self.item_from_task(task, with_selects=with_selects)
+        item = self.wu_list.item_from_task(task, with_selects=with_selects)
         shop_items = self.shop.search(item.name, item.sub_name)
         item.set_shop_items(shop_items)
 
@@ -106,29 +110,29 @@ class WuList:
             self.shop.take(item.selected_shop_item())
 
         checked = []
-        for sub in self.client.get_task_subtasks(iid):
+        for sub in self.wu_list.client.get_task_subtasks(iid):
             if sub['completed']:
                 checked.append(ShopItem.parse(sub['title']))
-            self.client.delete_subtask(sub['id'], sub['revision'])
+            self.wu_list.client.delete_subtask(sub['id'], sub['revision'])
 
         for shop_item in item.shop_items:
             comp = shop_item in checked or len(item.shop_items) == 1
-            self.client.create_subtask(iid, unicode(shop_item), completed=comp)
+            self.wu_list.client.create_subtask(iid, unicode(shop_item), completed=comp)
 
-        notes = self.client.get_task_notes(iid)
+        notes = self.wu_list.client.get_task_notes(iid)
         if len(notes) == 1:
             if notes[0]['content'] != item.note():
-                self.client.delete_note(notes[0]['id'], notes[0]['revision'])
-                self.client.create_note(iid, item.note())
+                self.wu_list.client.delete_note(notes[0]['id'], notes[0]['revision'])
+                self.wu_list.client.create_note(iid, item.note())
         else:
-            self.client.create_note(iid, item.note())
+            self.wu_list.client.create_note(iid, item.note())
 
         self.shop_items[iid] = item
         while True:
             try:
-                new_revision = self.client.get_task(iid)['revision']
+                new_revision = self.wu_list.client.get_task(iid)['revision']
                 self.shop_task_revs[iid] = new_revision
-                self.client.update_task(iid, new_revision, title=item.title())
+                self.wu_list.client.update_task(iid, new_revision, title=item.title())
                 break
             except ValueError:
                 pass
@@ -136,7 +140,7 @@ class WuList:
     def update_item(self, task):
         self.logger.info("Update - " + task['title'].encode('utf-8'))
         iid = task['id']
-        item = self.item_from_task(task, with_selects=True)
+        item = self.wu_list.item_from_task(task, with_selects=True)
         existing = self.shop_items[iid]
 
         if item != existing:
@@ -159,13 +163,13 @@ class WuList:
                     self.shop.take(existing.selected_shop_item())
                     update = True
             if update:
-                new_revision = self.client.get_task(iid)['revision']
+                new_revision = self.wu_list.client.get_task(iid)['revision']
                 self.shop_task_revs[iid] = new_revision
-                self.client.update_task(iid, new_revision, title=existing.title())
+                self.wu_list.client.update_task(iid, new_revision, title=existing.title())
 
     def detect_changed_tasks(self):
-        self.shop_list_rev = self.client.get_list(self.shop_list_id)['revision']
-        new_tasks = self.client.get_tasks(self.shop_list_id)
+        self.shop_list_rev = self.wu_list.client.get_list(self.shop_list_id)['revision']
+        new_tasks = self.wu_list.client.get_tasks(self.shop_list_id)
         changed = []
         new = []
         for new_task in new_tasks:
@@ -193,18 +197,3 @@ class WuList:
             self.shop_task_revs.pop(iid)
 
         return new, changed, deleted
-
-    def item_from_task(self, task, with_selects=False):
-        notes = self.client.get_task_notes(task['id'])
-        if len(notes) > 0:
-            notes = notes[0]['content']
-        else:
-            notes = u""
-
-        sub_filter = []
-        if with_selects:
-            for sub in self.client.get_task_subtasks(task['id'], completed=True):
-                if sub['completed']:
-                    sub_filter.append(sub)
-
-        return Item.parse(task['title'], notes, sub_filter)
