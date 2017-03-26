@@ -6,15 +6,15 @@ from BeautifulSoup import NavigableString
 from requests import get
 from bs4 import BeautifulSoup
 
-from FoodScan.BarcodeDescriptors.barcodeDescriptor import BarcodeDescriptor
+from FoodScan.BarcodeDecoder.barcodeDecoder import BarcodeDecoder
 from FoodScan.item import *
 from pysimplelog import Logger
 
 
-class Geizhals(BarcodeDescriptor):
+class Geizhals(BarcodeDecoder):
 
     def __init__(self):
-        BarcodeDescriptor.__init__(self)
+        BarcodeDecoder.__init__(self)
         self.logger = Logger('Geizhalz')
 
     @staticmethod

@@ -3,7 +3,7 @@
 
 from FoodScan.Synchronizer.bring import Bring
 from FoodScan.Synchronizer.bringSync import BringSync
-from FoodScan.BarcodeDescriptors.barcodeDescriptorCombiner import BarcodeDescriptorCombiner
+from FoodScan.BarcodeDecoder.cascadingBarcodeDecoder import CascadingBarcodeDecoder
 from FoodScan.Shops.kaufland import *
 from FoodScan.Synchronizer.barcodeSync import BarcodeSync
 from FoodScan.Synchronizer.shopSync import ShopSync
@@ -22,5 +22,5 @@ l = WuList(wunderlist_client_id, wunderlist_token)
 
 # Syncer:
 BringSync(Bring(bring_user_uuid, bring_api_key, bring_authorization, bring_cookie), l, bring_export_list_id)
-BarcodeSync(BarcodeDescriptorCombiner(), BarcodeReader(barcode_device), l, shopping_wunderlist_list_id, async=False)
+BarcodeSync(CascadingBarcodeDecoder(), BarcodeReader(barcode_device), l, shopping_wunderlist_list_id, async=False)
 ShopSync(kl, l, shopping_wunderlist_list_id, "http://flying-stampe.de", 8080, async=False)

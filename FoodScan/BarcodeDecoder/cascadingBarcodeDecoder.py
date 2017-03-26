@@ -1,14 +1,14 @@
-from FoodScan.BarcodeDescriptors.barcodeDescriptor import BarcodeDescriptor
-from FoodScan.BarcodeDescriptors.codecheck import CodeCheck
-from FoodScan.BarcodeDescriptors.digitEye import DigitEye
-from FoodScan.BarcodeDescriptors.eanSearch import EanSearch
-from FoodScan.BarcodeDescriptors.geizhalz import Geizhals
+from FoodScan.BarcodeDecoder.barcodeDecoder import BarcodeDecoder
+from FoodScan.BarcodeDecoder.codecheck import CodeCheck
+from FoodScan.BarcodeDecoder.digitEye import DigitEye
+from FoodScan.BarcodeDecoder.eanSearch import EanSearch
+from FoodScan.BarcodeDecoder.geizhalz import Geizhals
 
 
-class BarcodeDescriptorCombiner(BarcodeDescriptor):
+class CascadingBarcodeDecoder(BarcodeDecoder):
 
     def __init__(self):
-        BarcodeDescriptor.__init__(self)
+        BarcodeDecoder.__init__(self)
         self.cc = CodeCheck()
         self.es = EanSearch()
         self.de = DigitEye()

@@ -2,15 +2,15 @@ from urllib2 import quote
 from requests import get
 from bs4 import BeautifulSoup
 
-from FoodScan.BarcodeDescriptors.barcodeDescriptor import BarcodeDescriptor
+from FoodScan.BarcodeDecoder.barcodeDecoder import BarcodeDecoder
 from FoodScan.item import *
 from pysimplelog import Logger
 
 
-class DigitEye(BarcodeDescriptor):
+class DigitEye(BarcodeDecoder):
 
     def __init__(self):
-        BarcodeDescriptor.__init__(self)
+        BarcodeDecoder.__init__(self)
         self.logger = Logger('DigitEye')
 
     @staticmethod

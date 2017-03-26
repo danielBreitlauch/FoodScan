@@ -3,7 +3,7 @@
 import abc
 
 
-class BarcodeDescriptor:
+class BarcodeDecoder:
 
     def __init__(self):
         pass

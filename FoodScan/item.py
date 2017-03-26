@@ -52,8 +52,8 @@ class Item:
         if url:
             self.url = url
         else:
-            from FoodScan.BarcodeDescriptors.codecheck import CodeCheck
-            self.url = CodeCheck.url(self.name)
+            from FoodScan.BarcodeDecoder.cascadingBarcodeDecoder import CascadingBarcodeDecoder
+            self.url = CascadingBarcodeDecoder.url(self.name)
 
     def inc_amount(self, amount=1):
         self.amount += amount
