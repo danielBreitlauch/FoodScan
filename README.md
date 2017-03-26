@@ -48,18 +48,18 @@ from config import *
 wl = WuList(wunderlist_client_id, wunderlist_token)
 ```
 
-###Barcode scanner import to wunderlist:###
+### Barcode scanner import to wunderlist: ###
 ```
 reader = BarcodeReader(barcode_sync_config['barcode_device'])
 BarcodeSync(CascadingBarcodeDecoder(), reader, wl, barcode_sync_config['wunderlist_list_id'], async=False)
 ```
 
-###Wunderlist export to the Bring App:###
+### Wunderlist export to the Bring App: ###
 ```
 BringSync(Bring(bring_sync_config), wl, bring_sync_config["export_list_id"])
 ```
 
-###Wunderlist sync with a Kaufland or AllYouNeed shopping cart:###
+### Wunderlist sync with a Kaufland or AllYouNeed shopping cart: ###
 1. You can chose a shop implementation. Some shops need a Captcha solving service account.
 
 ```
@@ -83,7 +83,7 @@ ShopSync(kl, wl, shopping_wunderlist_list_id,
          async=False)
 ```
 
-###All three parts in one app:###
+### All three parts in one app: ###
 ```
 python sync_all.py
 ```
