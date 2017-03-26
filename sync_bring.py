@@ -1,11 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
-from FoodScan.Synchronizer.bring import Bring
-from FoodScan.Synchronizer.bringSync import BringSync
-from FoodScan.Synchronizer.wunderlist import *
+from FoodScan.BringSync.bring import Bring
+from FoodScan.BringSync.bringSync import BringSync
+from FoodScan.wunderlist import *
 from config import *
-
 
 wl = WuList(wunderlist_client_id, wunderlist_token)
 

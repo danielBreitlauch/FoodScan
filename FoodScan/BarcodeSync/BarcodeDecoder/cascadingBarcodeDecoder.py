@@ -1,8 +1,9 @@
-from FoodScan.BarcodeDecoder.barcodeDecoder import BarcodeDecoder
 from FoodScan.BarcodeDecoder.codecheck import CodeCheck
 from FoodScan.BarcodeDecoder.digitEye import DigitEye
 from FoodScan.BarcodeDecoder.eanSearch import EanSearch
 from FoodScan.BarcodeDecoder.geizhalz import Geizhals
+
+from FoodScan.BarcodeSync.BarcodeDecoder.barcodeDecoder import BarcodeDecoder
 
 
 class CascadingBarcodeDecoder(BarcodeDecoder):

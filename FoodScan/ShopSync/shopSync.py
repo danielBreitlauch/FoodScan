@@ -3,7 +3,7 @@ from thread import start_new_thread
 from time import sleep
 import traceback
 from pysimplelog import Logger
-from FoodScan.item import ShopItem
+from FoodScan.items import ShopItem
 
 from werkzeug.wrappers import Request, Response
 from werkzeug.serving import run_simple

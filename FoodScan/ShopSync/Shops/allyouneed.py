@@ -1,19 +1,19 @@
 # -*- coding: utf-8 -*-
 
-from pysimplelog import Logger
 import pickle
 import time
-from urllib2 import quote
 import urlparse
 from datetime import datetime
+from urllib2 import quote
 
 from bs4 import BeautifulSoup
+from pysimplelog import Logger
 from requests import *
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 
-from FoodScan.Shops.shop import Shop
-from FoodScan.item import ShopItem
+from FoodScan.ShopSync.Shops import Shop
+from FoodScan.items import ShopItem
 
 
 def extract_price(dom_item):

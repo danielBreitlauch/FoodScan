@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from FoodScan.item import *
+from FoodScan.items import *
 import wunderpy2
 from pysimplelog import Logger
 

@@ -1,12 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from FoodScan.Shops.kaufland import *
-from FoodScan.Synchronizer.shopSync import ShopSync
-from FoodScan.Synchronizer.wunderlist import *
+from FoodScan.ShopSync.shopSync import ShopSync
 from FoodScan.antiCaptcha import AntiCaptcha
+from FoodScan.wunderlist import *
 from config import *
-
 
 # Shops:
 kl = Kaufland(kaufland_email, kaufland_password, AntiCaptcha(anti_captcha_key))

@@ -1,10 +1,11 @@
 from urllib2 import quote
-from requests import get
-from bs4 import BeautifulSoup
 
-from FoodScan.BarcodeDecoder.barcodeDecoder import BarcodeDecoder
-from FoodScan.item import *
+from bs4 import BeautifulSoup
 from pysimplelog import Logger
+from requests import get
+
+from FoodScan.BarcodeSync.BarcodeDecoder.barcodeDecoder import BarcodeDecoder
+from FoodScan.items import *
 
 
 class DigitEye(BarcodeDecoder):

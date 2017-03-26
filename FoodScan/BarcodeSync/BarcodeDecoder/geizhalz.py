@@ -2,13 +2,12 @@
 
 from urllib2 import quote
 
-from BeautifulSoup import NavigableString
-from requests import get
 from bs4 import BeautifulSoup
-
-from FoodScan.BarcodeDecoder.barcodeDecoder import BarcodeDecoder
-from FoodScan.item import *
 from pysimplelog import Logger
+from requests import get
+
+from FoodScan.BarcodeSync.BarcodeDecoder.barcodeDecoder import BarcodeDecoder
+from FoodScan.items import *
 
 
 class Geizhals(BarcodeDecoder):
