@@ -7,7 +7,7 @@ from FoodScan.wunderlist import *
 from config import *
 
 wl = WuList(wunderlist_client_id, wunderlist_token)
-reader = BarcodeReader(barcode_device)
+reader = BarcodeReader(barcode_sync_config['barcode_device'])
 barcode_transformer = CascadingBarcodeDecoder()
 
 # Syncer:

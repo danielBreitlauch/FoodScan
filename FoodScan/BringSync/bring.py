@@ -13,13 +13,13 @@ class Bring:
         'Accept-Language': 'de-DE,de;q=0.8,en-US;q=0.6,en;q=0.4'
     }
 
-    def __init__(self, user_uuid, api_key, authentication, cookie):
+    def __init__(self, config):
         self.auth_headers = {
-            'X-BRING-API-KEY': api_key,
-            'X-BRING-USER-UUID': user_uuid,
+            'X-BRING-API-KEY': config['api_key'],
+            'X-BRING-USER-UUID': config['user_uuid'],
             'X-BRING-CLIENT': 'webApp',
-            'Authorization': authentication,
-            'Cookie': cookie
+            'Authorization': config['authentication'],
+            'Cookie': config['cookie']
         }
 
     def upload(self, items, name="Einkauf"):

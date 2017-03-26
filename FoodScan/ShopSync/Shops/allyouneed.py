@@ -12,7 +12,7 @@ from requests import *
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 
-from FoodScan.ShopSync.Shops import Shop
+from FoodScan.ShopSync.Shops.shop import Shop
 from FoodScan.items import ShopItem
 
 

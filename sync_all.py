@@ -20,6 +20,6 @@ kl = Kaufland(kaufland_email, kaufland_password, AntiCaptcha(anti_captcha_key))
 l = WuList(wunderlist_client_id, wunderlist_token)
 
 # Syncer:
-BringSync(Bring(bring_user_uuid, bring_api_key, bring_authorization, bring_cookie), l, bring_export_list_id)
-BarcodeSync(CascadingBarcodeDecoder(), BarcodeReader(barcode_device), l, shopping_wunderlist_list_id)
+BringSync(Bring(bring_sync_config), l, bring_sync_config['export_list_id'])
+BarcodeSync(CascadingBarcodeDecoder(), BarcodeReader(barcode_sync_config['barcode_device']), l, barcode_sync_config['wunderlist_list_id'])
 ShopSync(kl, l, shopping_wunderlist_list_id, "http://flying-stampe.de", 8080, async=False)

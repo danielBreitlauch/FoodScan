@@ -46,4 +46,3 @@ class AntiCaptcha:
         if response['errorId'] == 0:
             return response['balance']
         return None
-

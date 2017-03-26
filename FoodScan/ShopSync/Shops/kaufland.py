@@ -9,7 +9,7 @@ from bs4 import BeautifulSoup
 from pysimplelog import Logger
 from requests import Session
 
-from FoodScan.ShopSync.Shops import Shop
+from FoodScan.ShopSync.Shops.shop import Shop
 from FoodScan.items import ShopItem
 
 
