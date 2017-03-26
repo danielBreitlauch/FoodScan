@@ -26,6 +26,9 @@ class DigitEye(BarcodeDescriptor):
                 self.logger.warn("Overuse")
                 return None
 
+            if not blob.find('h2', {'id': "description"}):
+                return None
+
             name = blob.find('h2', {'id': "description"}).text
             ingredients = blob.find('td', {'id': "ingredients"}).text
 

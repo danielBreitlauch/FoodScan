@@ -22,6 +22,9 @@ class CodeCheck(BarcodeDescriptor):
         url = CodeCheck.url(barcode)
         try:
             blob = BeautifulSoup(get(url).text, "html.parser")
+            if not blob.find("meta", property="og:title"):
+                return None
+
             ratings, numeric = self.parse_ratings(blob)
 
             return Item(name=self.parse_name(blob),
