@@ -1,15 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from FoodScan.BarcodeSync.BarcodeDecoder.cascadingBarcodeDecoder import CascadingBarcodeDecoder
-from FoodScan.BarcodeSync.barcodeSync import BarcodeSync
-from FoodScan.BarcodeSync.barcodereader import BarcodeReader
-from FoodScan.BringSync.bring import Bring
-from FoodScan.BringSync.bringSync import BringSync
-from FoodScan.ShopSync.Shops.kaufland import Kaufland
-from FoodScan.ShopSync.shopSync import ShopSync
-from FoodScan.antiCaptcha import AntiCaptcha
-from FoodScan.wunderlist import *
+from FoodScan.BarcodeSync import *
+from FoodScan.BringSync import *
+from FoodScan.ShopSync import *
+from FoodScan import *
 from config import *
 
 # Shops:

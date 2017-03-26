@@ -1,9 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from FoodScan.BarcodeSync.BarcodeDecoder.cascadingBarcodeDecoder import CascadingBarcodeDecoder
-from FoodScan.BarcodeSync.barcodeSync import BarcodeSync
-from FoodScan.BarcodeSync.barcodereader import BarcodeReader
-from FoodScan.wunderlist import *
+from FoodScan import *
+from FoodScan.BarcodeSync import *
 from config import *
 
 wl = WuList(wunderlist_client_id, wunderlist_token)

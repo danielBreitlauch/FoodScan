@@ -1,9 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from FoodScan.ShopSync.Shops.kaufland import Kaufland
-from FoodScan.ShopSync.shopSync import ShopSync
-from FoodScan.antiCaptcha import AntiCaptcha
-from FoodScan.wunderlist import *
+from FoodScan import *
+from FoodScan.ShopSync import *
 from config import *
 
 # Shops:
