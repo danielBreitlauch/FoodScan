@@ -31,8 +31,10 @@ class ShopSync:
             function()
 
     def start_hook(self):
-        run_simple(self.web_server_ip, self.web_server_port, self.hook)
+        self.sync_shop_list()
+        self.sync_shop_list()
         self.wu_list.create_web_hook(self.shop_list_id, self.web_hook_url, self.web_server_port)
+        run_simple(self.web_server_ip, self.web_server_port, self.hook)
 
     @Request.application
     def hook(self, _):
