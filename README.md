@@ -39,27 +39,40 @@ python ./setup.py install
 Run
 --------
 
-Generally:
-1. Edit config.py
-2. import the config
-3. Create a WuList instance to connect to Wunderlist
+Generally edit config.py.
+
+### Use existing scripts: ###
 ```
-from config import *
-wl = WuList(wunderlist_client_id, wunderlist_token)
+python sync_all.py
+python sync_barcode.py
+python sync_bring.py
+python sync_shop.py
 ```
+
+### Write your own scripts: ###
 
 ### Barcode scanner import to wunderlist: ###
 ```
+from config import *
+wl = WuList(wunderlist_client_id, wunderlist_token)
 reader = BarcodeReader(barcode_sync_config['barcode_device'])
 BarcodeSync(CascadingBarcodeDecoder(), reader, wl, barcode_sync_config['wunderlist_list_id'], async=False)
 ```
 
 ### Wunderlist export to the Bring App: ###
 ```
+from config import *
+wl = WuList(wunderlist_client_id, wunderlist_token)
 BringSync(Bring(bring_sync_config), wl, bring_sync_config["export_list_id"])
 ```
 
 ### Wunderlist sync with a Kaufland or AllYouNeed shopping cart: ###
+
+```
+from config import *
+wl = WuList(wunderlist_client_id, wunderlist_token)
+```
+
 1. You can chose a shop implementation. Some shops need a Captcha solving service account.
 
 ```
@@ -83,8 +96,4 @@ ShopSync(kl, wl, shopping_wunderlist_list_id,
          async=False)
 ```
 
-### All three parts in one app: ###
-```
-python sync_all.py
-```
 
