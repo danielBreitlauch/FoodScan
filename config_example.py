@@ -20,5 +20,5 @@ kaufland_password = "**************"
 anti_captcha_key = "12345678901234567890"
 
 web_hook_url = "http://example.de"
-web_server_ip =   # own ip
+web_server_ip = "999.999.999.999"  # own ip
 web_server_port = 1188  # own port wunderlist connects to
