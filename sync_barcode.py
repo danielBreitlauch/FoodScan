@@ -6,7 +6,5 @@ from config import *
 
 wl = WuList(wunderlist_client_id, wunderlist_token)
 reader = BarcodeReader(barcode_sync_config['barcode_device'])
-barcode_transformer = CascadingBarcodeDecoder()
 
-# Syncer:
-BarcodeSync(barcode_transformer, reader, wl, shopping_wunderlist_list_id, async=False)
+BarcodeSync(CascadingBarcodeDecoder(), reader, wl, barcode_sync_config['wunderlist_list_id'], async=False)
