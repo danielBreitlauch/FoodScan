@@ -1,25 +1,13 @@
 import struct
 import select
-import thread
-import traceback
-
 from pysimplelog import Logger
 
 
-class Barcode:
+class BarcodeReader:
 
-    def __init__(self, device, callback):
-        self.file = open(device, 'rb')
-        self.callback = callback
+    def __init__(self, device):
         self.logger = Logger('Barcode scan')
-        thread.start_new_thread(self.listen, ())
-
-    def listen(self):
-        while True:
-            try:
-                self.callback(self.scan())
-            except Exception:
-                traceback.print_exc()
+        self.file = open(device, 'rb')
 
     def scan(self):
         self.logger.info('Waiting for scanner data')
@@ -29,14 +17,14 @@ class Barcode:
         scanner_data = ''
         while True:
             rlist, _wlist, _elist = select.select([self.file], [], [], 0.1)
-            if rlist != []:
+            if rlist:
                 new_data = ''
                 while not new_data.endswith('\x01\x00\x1c\x00\x01\x00\x00\x00'):
                     new_data = rlist[0].read(16)
                     scanner_data += new_data
                 # There are 4 more keystrokes sent after the one we matched against,
                 # so we flush out that buffer before proceedin^g:
-                [rlist[0].read(16) for i in range(4)]
+                [rlist[0].read(16) for _ in range(4)]
                 scan_complete = True
             if scan_complete:
                 break
@@ -61,4 +49,3 @@ class Barcode:
             upc_chars.append(str((digit_int - 1) % 10))
 
         return ''.join(upc_chars)
-
