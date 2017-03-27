@@ -32,13 +32,13 @@ class BarcodeSync:
 
         for task in tasks:
             if item.name in task['title']:
-                existing = self.wu_list.item_from_task(task)
+                existing = self.wu_list.item_from_task(task, with_selects=False)
                 existing.inc_amount()
                 self.wu_list.client.update_task(task['id'], task['revision'], title=existing.title())
                 return
 
         for task in tasks:
-            existing = self.wu_list.item_from_task(task, with_selects=True)
+            existing = self.wu_list.item_from_task(task)
             if existing.synced() and item.name in existing.selected_shop_item().name:
                 existing.inc_amount()
                 self.wu_list.client.update_task(task['id'], task['revision'], title=existing.title())

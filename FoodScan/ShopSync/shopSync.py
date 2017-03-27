@@ -78,7 +78,7 @@ class ShopSync:
         change = False
 
         for task in tasks:
-            item = self.wu_list.item_from_task(task, with_selects=True)
+            item = self.wu_list.item_from_task(task)
             shop_item = item.selected_shop_item()
             if shop_item:
                 shop_items.append(shop_item)
@@ -118,7 +118,7 @@ class ShopSync:
     def new_item(self, task):
         self.logger.info("new - " + task['title'].encode('utf-8'))
         iid = task['id']
-        item = self.wu_list.item_from_task(task, with_selects=True)
+        item = self.wu_list.item_from_task(task)
         self.split_items(item)
 
         shop_items = self.shop.search(item.name, item.sub_name)
@@ -154,13 +154,14 @@ class ShopSync:
     def update_item(self, task):
         self.logger.info("Update - " + task['title'].encode('utf-8'))
         iid = task['id']
-        item = self.wu_list.item_from_task(task, with_selects=True)
+        item = self.wu_list.item_from_task(task)
         existing = self.shop_items[iid]
 
         if item != existing:
             self.remove_item_by_id(iid)
             self.new_item(task)
         else:
+            self.split_items(item)
             update = False
             if item.synced() and not existing.synced():
                 existing.select_shop_item(item.selected_shop_item())

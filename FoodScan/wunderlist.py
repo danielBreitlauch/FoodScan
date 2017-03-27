@@ -17,7 +17,7 @@ class WuList:
 
         self.client.create_webhook(self.list_id, url + ":" + str(port), "generic")
 
-    def item_from_task(self, task, with_selects=False):
+    def item_from_task(self, task, with_selects=True):
         notes = self.client.get_task_notes(task['id'])
         if len(notes) > 0:
             notes = notes[0]['content']
