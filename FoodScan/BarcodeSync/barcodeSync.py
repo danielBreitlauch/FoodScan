@@ -5,12 +5,11 @@ import traceback
 
 
 class BarcodeSync:
-    def __init__(self, barcode_descriptor, barcode_reader, wu_list, shop_list_id, async=True):
+    def __init__(self, barcode_descriptor, barcode_reader, wu_list, async=True):
         self.logger = Logger('BarcodeSync')
         self.barcode_descriptor = barcode_descriptor
         self.barcode_reader = barcode_reader
         self.wu_list = wu_list
-        self.shop_list_id = shop_list_id
         if async:
             start_new_thread(self.listen, ())
         else:
@@ -29,7 +28,7 @@ class BarcodeSync:
                 traceback.print_exc()
 
     def add_barcode(self, item):
-        tasks = self.wu_list.client.get_tasks(self.shop_list_id)
+        tasks = self.wu_list.client.get_tasks(self.wu_list.list_id)
 
         for task in tasks:
             if item.name in task['title']:
@@ -45,5 +44,4 @@ class BarcodeSync:
                 self.wu_list.client.update_task(task['id'], task['revision'], title=existing.title())
                 return
 
-        task = self.wu_list.client.create_task(self.shop_list_id, title=item.title())
-        self.wu_list.client.create_note(task['id'], item.note())
+        self.wu_list.create_item(item)

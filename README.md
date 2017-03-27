@@ -54,23 +54,23 @@ python sync_shop.py
 ### Barcode scanner import to wunderlist: ###
 ```
 from config import *
-wl = WuList(wunderlist_client_id, wunderlist_token)
+wl = WuList(wunderlist_client_id, wunderlist_token, barcode_sync_config['wunderlist_list_id'])
 reader = BarcodeReader(barcode_sync_config['barcode_device'])
-BarcodeSync(CascadingBarcodeDecoder(), reader, wl, barcode_sync_config['wunderlist_list_id'], async=False)
+BarcodeSync(CascadingBarcodeDecoder(), reader, wl, async=False)
 ```
 
 ### Wunderlist export to the Bring App: ###
 ```
 from config import *
-wl = WuList(wunderlist_client_id, wunderlist_token)
-BringSync(Bring(bring_sync_config), wl, bring_sync_config["export_list_id"])
+wl = WuList(wunderlist_client_id, wunderlist_token, bring_sync_config["export_list_id"])
+BringSync(Bring(bring_sync_config), wl)
 ```
 
 ### Wunderlist sync with a Kaufland or AllYouNeed shopping cart: ###
 
 ```
 from config import *
-wl = WuList(wunderlist_client_id, wunderlist_token)
+wl = WuList(wunderlist_client_id, wunderlist_token, shopping_wunderlist_list_id)
 ```
 
 1. You can chose a shop implementation. Some shops need a Captcha solving service account.
@@ -87,9 +87,9 @@ ayn = AllYouNeed(all_you_need_email, all_you_need_password)
      In that case wunderlist is calling this app in case of list changes.
 
 ```
-ShopSync(kl, wl, shopping_wunderlist_list_id, async=False)
+ShopSync(kl, wl, async=False)
 # or 
-ShopSync(kl, wl, shopping_wunderlist_list_id,
+ShopSync(kl, wl,
          web_hook_url=web_hook_url,
          web_server_ip=web_server_ip,
          web_server_port=web_server_port,

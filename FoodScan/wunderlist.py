@@ -5,16 +5,17 @@ from pysimplelog import Logger
 
 
 class WuList:
-    def __init__(self, client_id, token):
+    def __init__(self, client_id, token, list_id):
         self.logger = Logger('Wunderlist')
         self.client = wunderpy2.WunderApi().get_client(token, client_id)
+        self.list_id = list_id
 
-    def create_web_hook(self, list_id, url, port):
-        hooks = self.client.get_webhooks(list_id)
+    def create_web_hook(self, url, port):
+        hooks = self.client.get_webhooks(self.list_id)
         for hook in hooks:
             self.client.delete_webhook(hook['id'], 0)
 
-        self.client.create_webhook(list_id, url + ":" + str(port), "generic")
+        self.client.create_webhook(self.list_id, url + ":" + str(port), "generic")
 
     def item_from_task(self, task, with_selects=False):
         notes = self.client.get_task_notes(task['id'])
@@ -23,10 +24,16 @@ class WuList:
         else:
             notes = u""
 
-        sub_filter = []
+        sub_tasks = []
         if with_selects:
             for sub in self.client.get_task_subtasks(task['id'], completed=True):
-                if sub['completed']:
-                    sub_filter.append(sub)
+                sub_tasks.append(sub)
 
-        return Item.parse(task['title'], notes, sub_filter)
+        return Item.parse(task['title'], notes, sub_tasks)
+
+    def create_item(self, item):
+        task = self.client.create_task(self.list_id, title=item.title())
+        self.client.create_note(task['id'], item.note())
+        for shop_item in item.shop_items:
+            self.client.create_subtask(task['id'], unicode(shop_item), completed=shop_item.selected)
+
