@@ -30,7 +30,7 @@ class CodeCheck(BarcodeDecoder):
 
             return Item(name=self.parse_name(blob),
                         sub_name=self.parse_sub_name(blob),
-                        cc_price=self.parse_price(blob),
+                        price=self.parse_price(blob),
                         url=url,
                         ingredients=self.parse_ingredients(blob),
                         ratings=ratings,

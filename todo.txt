@@ -1,7 +1,7 @@
-Exception -> email
+remember mappings from list item to shop item
+
 whole cart data list
     total price
     delivery date
-remember mappings from list item to shop item
+
 checkout
-multi selection of shop item -> split list item

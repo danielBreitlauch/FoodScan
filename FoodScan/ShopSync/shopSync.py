@@ -2,19 +2,19 @@
 from thread import start_new_thread
 from time import sleep
 import traceback
+
+from FoodScan.items import Item
 from pysimplelog import Logger
-from FoodScan import ShopItem
 
 from werkzeug.wrappers import Request, Response
 from werkzeug.serving import run_simple
 
 
 class ShopSync:
-    def __init__(self, shop, wu_list, shop_list_id, web_hook_url=None, web_server_ip=None, web_server_port=8080, async=True):
+    def __init__(self, shop, wu_list, web_hook_url=None, web_server_ip=None, web_server_port=8080, async=True):
         self.logger = Logger('ShopSync')
         self.shop = shop
         self.wu_list = wu_list
-        self.shop_list_id = shop_list_id
         self.shop_list_rev = 0
         self.shop_task_revs = {}
         self.shop_items = {}
@@ -33,7 +33,7 @@ class ShopSync:
     def start_hook(self):
         self.sync_shop_list()
         self.sync_shop_list()
-        self.wu_list.create_web_hook(self.shop_list_id, self.web_hook_url, self.web_server_port)
+        self.wu_list.create_web_hook(self.web_hook_url, self.web_server_port)
         run_simple(self.web_server_ip, self.web_server_port, self.hook)
 
     @Request.application
@@ -56,7 +56,7 @@ class ShopSync:
                 traceback.print_exc()
 
     def sync_shop_list(self):
-        if self.shop_list_rev == self.wu_list.client.get_list(self.shop_list_id)['revision']:
+        if self.shop_list_rev == self.wu_list.client.get_list(self.wu_list.list_id)['revision']:
             return False
 
         new, changed, deleted_ids = self.detect_changed_tasks()
@@ -64,7 +64,7 @@ class ShopSync:
             self.remove_item_by_id(iid)
 
         for task in new:
-            self.new_item(task, with_selects=True)
+            self.new_item(task)
 
         for task in changed:
             self.update_item(task)
@@ -73,7 +73,7 @@ class ShopSync:
 
     def detect_cart_list_differences(self):
         cart_items = self.shop.cart()
-        tasks = self.wu_list.client.get_tasks(self.shop_list_id)
+        tasks = self.wu_list.client.get_tasks(self.wu_list.list_id)
         shop_items = []
         change = False
 
@@ -101,25 +101,37 @@ class ShopSync:
         if item.synced():
             self.shop.delete(item.selected_shop_item())
 
-    def new_item(self, task, with_selects=False):
+    def split_items(self, item):
+        selected_shop_items = []
+        for shop_item in item.shop_items:
+            if shop_item.selected:
+                selected_shop_items.append(shop_item)
+        if len(selected_shop_items) > 0:
+            while len(selected_shop_items) > 1:
+                shop_item = selected_shop_items.pop()
+                new_item = Item(name=shop_item.name, price=shop_item.price, url=shop_item.link)
+                new_item.select_shop_item(shop_item)
+                self.wu_list.create_item(new_item)
+                shop_item.selected = False
+            item.select_shop_item(selected_shop_items.pop())
+
+    def new_item(self, task):
         self.logger.info("new - " + task['title'].encode('utf-8'))
         iid = task['id']
-        item = self.wu_list.item_from_task(task, with_selects=with_selects)
+        item = self.wu_list.item_from_task(task, with_selects=True)
+        self.split_items(item)
+
         shop_items = self.shop.search(item.name, item.sub_name)
         item.set_shop_items(shop_items)
 
         if item.selected_item:
             self.shop.take(item.selected_shop_item())
 
-        checked = []
         for sub in self.wu_list.client.get_task_subtasks(iid):
-            if sub['completed']:
-                checked.append(ShopItem.parse(sub['title']))
             self.wu_list.client.delete_subtask(sub['id'], sub['revision'])
 
         for shop_item in item.shop_items:
-            comp = shop_item in checked or len(item.shop_items) == 1
-            self.wu_list.client.create_subtask(iid, unicode(shop_item), completed=comp)
+            self.wu_list.client.create_subtask(iid, unicode(shop_item), completed=shop_item.selected)
 
         notes = self.wu_list.client.get_task_notes(iid)
         if len(notes) == 1:
@@ -170,8 +182,8 @@ class ShopSync:
                 self.wu_list.client.update_task(iid, new_revision, title=existing.title())
 
     def detect_changed_tasks(self):
-        self.shop_list_rev = self.wu_list.client.get_list(self.shop_list_id)['revision']
-        new_tasks = self.wu_list.client.get_tasks(self.shop_list_id)
+        self.shop_list_rev = self.wu_list.client.get_list(self.wu_list.list_id)['revision']
+        new_tasks = self.wu_list.client.get_tasks(self.wu_list.list_id)
         changed = []
         new = []
         for new_task in new_tasks:

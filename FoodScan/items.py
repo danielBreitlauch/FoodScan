@@ -2,12 +2,13 @@
 
 
 class ShopItem:
-    def __init__(self, article_id, amount, name, price, link):
+    def __init__(self, article_id, amount, name, price, link, selected=False):
         self.article_id = article_id
         self.amount = amount
         self.name = name
         self.price = price
         self.link = link
+        self.selected = selected
 
     def __unicode__(self):
         return str(self.price / 100.0) + u'€ ' + self.name + u' (' + self.link + u')'
@@ -39,10 +40,10 @@ class ShopItem:
 
 class Item:
 
-    def __init__(self, name, sub_name=None, cc_price=None, ingredients=None, ratings=None, url=None, amount=1, num_rating=0):
+    def __init__(self, name, sub_name=None, price=None, ingredients=None, ratings=None, url=None, amount=1, num_rating=0):
         self.name = name
         self.sub_name = sub_name
-        self.cc_price = cc_price
+        self.price = price
         self.ingredients = ingredients
         self.ratings_data = ratings
         self.num_rating = num_rating
@@ -65,15 +66,17 @@ class Item:
             item.amount = self.amount
             self.shop_items.append(item)
 
-            if item == self.selected_item:
+            if item == self.selected_item or item.selected:
                 self.selected_item = item
+                self.selected_item.selected = True
                 selected_replaced = True
 
         if self.selected_item and not selected_replaced:
             self.selected_item = None
 
-        if len(shop_items) == 1 and self.name in self.shop_items[0]:
+        if len(shop_items) == 1 and self.name in self.shop_items[0].name:
             self.selected_item = self.shop_items[0]
+            self.selected_item.selected = True
 
     def select_shop_item(self, item):
         if self.shop_items is None and item is not None:
@@ -109,7 +112,7 @@ class Item:
 
     def title(self):
         title = ""
-        price = self.cc_price
+        price = self.price
         if self.synced():
             title = u"\u2713 "
             price = self.selected_item.price
@@ -141,10 +144,10 @@ class Item:
         return note
 
     @classmethod
-    def parse(cls, title, notes, completed_subs):
+    def parse(cls, title, notes, sub_tasks):
         name, amount, price, num_rating = cls.parse_title(title)
         cc_url, ingredients, ratings, sub_name = cls.parse_notes(notes)
-        shop_item = cls.parse_completed_subs(completed_subs)
+        shop_items = cls.parse_subs(sub_tasks)
 
         item = Item(name=name,
                     sub_name=sub_name,
@@ -153,9 +156,7 @@ class Item:
                     ratings=ratings,
                     amount=amount)
 
-        if shop_item:
-            item.select_shop_item(shop_item)
-
+        item.set_shop_items(shop_items)
         return item
 
     @classmethod
@@ -228,15 +229,17 @@ class Item:
         return url, ingredients, ratings_data, sub_name
 
     @classmethod
-    def parse_completed_subs(cls, completed_subs):
+    def parse_subs(cls, completed_subs):
         if len(completed_subs) == 0:
-            return None
+            return []
 
         shop_items = []
         for item in completed_subs:
-            shop_items.append(ShopItem.parse(item['title']))
+            shop_item = ShopItem.parse(item['title'])
+            shop_item.selected = item['completed']
+            shop_items.append(shop_item)
 
-        return shop_items[0]
+        return shop_items
 
 
 def is_int(string):

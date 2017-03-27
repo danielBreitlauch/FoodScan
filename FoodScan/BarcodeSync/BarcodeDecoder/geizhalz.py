@@ -29,7 +29,7 @@ class Geizhals(BarcodeDecoder):
                 return None
 
             return Item(name=self.parse_name(blob),
-                        cc_price=self.parse_price(blob),
+                        price=self.parse_price(blob),
                         url=url)
         except Exception, e:
             self.logger.warn("Exception while searching for " + barcode + "\n" + str(e))
