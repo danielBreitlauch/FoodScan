@@ -88,6 +88,7 @@ class Item:
             for i in self.shop_items:
                 if i == item:
                     self.selected_item = i
+                    self.selected_item.selected = True
                     self.selected_item.amount = self.amount
 
     def selected_shop_item(self):

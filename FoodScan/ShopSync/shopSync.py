@@ -3,7 +3,7 @@ from thread import start_new_thread
 from time import sleep
 import traceback
 
-from FoodScan.items import Item
+from FoodScan.items import Item, ShopItem
 from pysimplelog import Logger
 
 from werkzeug.wrappers import Request, Response
@@ -101,7 +101,7 @@ class ShopSync:
         if item.synced():
             self.shop.delete(item.selected_shop_item())
 
-    def split_items(self, item):
+    def split_items(self, item, iid, unmark=False):
         selected_shop_items = []
         for shop_item in item.shop_items:
             if shop_item.selected:
@@ -113,13 +113,17 @@ class ShopSync:
                 new_item.select_shop_item(shop_item)
                 self.wu_list.create_item(new_item)
                 shop_item.selected = False
+                if unmark:
+                    for sub in self.wu_list.client.get_task_subtasks(iid):
+                        if shop_item == ShopItem.parse(sub['title']):
+                            self.wu_list.client.update_subtask(sub['id'], sub['revision'], completed=False)
             item.select_shop_item(selected_shop_items.pop())
 
     def new_item(self, task):
         self.logger.info("new - " + task['title'].encode('utf-8'))
         iid = task['id']
         item = self.wu_list.item_from_task(task)
-        self.split_items(item)
+        self.split_items(item, iid)
 
         shop_items = self.shop.search(item.name, item.sub_name)
         item.set_shop_items(shop_items)
@@ -161,7 +165,7 @@ class ShopSync:
             self.remove_item_by_id(iid)
             self.new_item(task)
         else:
-            self.split_items(item)
+            self.split_items(item, iid, unmark=True)
             update = False
             if item.synced() and not existing.synced():
                 existing.select_shop_item(item.selected_shop_item())
