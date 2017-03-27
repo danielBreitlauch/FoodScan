@@ -22,6 +22,7 @@ class BarcodeSync:
                 barcode = self.barcode_reader.scan()
                 item = self.barcode_descriptor.item(barcode)
                 if item:
+                    self.logger.info("Detected: " + item.name)
                     self.add_barcode(item)
 
             except Exception:
