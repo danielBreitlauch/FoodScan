@@ -72,7 +72,7 @@ class Item:
         if self.selected_item and not selected_replaced:
             self.selected_item = None
 
-        if len(shop_items) == 1:
+        if len(shop_items) == 1 and self.name in self.shop_items[0]:
             self.selected_item = self.shop_items[0]
 
     def select_shop_item(self, item):
