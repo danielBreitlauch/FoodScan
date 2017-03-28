@@ -74,10 +74,6 @@ class Item:
         if self.selected_item and not selected_replaced:
             self.selected_item = None
 
-        if len(shop_items) == 1 and self.name in self.shop_items[0].name:
-            self.selected_item = self.shop_items[0]
-            self.selected_item.selected = True
-
     def select_shop_item(self, item):
         if self.shop_items is None and item is not None:
             self.shop_items = [item]
@@ -230,12 +226,9 @@ class Item:
         return url, ingredients, ratings_data, sub_name
 
     @classmethod
-    def parse_subs(cls, completed_subs):
-        if len(completed_subs) == 0:
-            return []
-
+    def parse_subs(cls, sub_tasks):
         shop_items = []
-        for item in completed_subs:
+        for item in sub_tasks:
             shop_item = ShopItem.parse(item['title'])
             shop_item.selected = item['completed']
             shop_items.append(shop_item)

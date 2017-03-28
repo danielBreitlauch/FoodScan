@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
+import pickle
 from thread import start_new_thread
 from time import sleep
 import traceback
-
-from FoodScan.items import Item, ShopItem
 from pysimplelog import Logger
 
 from werkzeug.wrappers import Request, Response
@@ -18,6 +17,7 @@ class ShopSync:
         self.shop_list_rev = 0
         self.shop_task_revs = {}
         self.shop_items = {}
+        self.choice = Choice("choices.db")
         if web_hook_url:
             self.web_hook_url = web_hook_url
             self.web_server_ip = web_server_ip
@@ -101,32 +101,17 @@ class ShopSync:
         if item.synced():
             self.shop.delete(item.selected_shop_item())
 
-    def split_items(self, item, iid, unmark=False):
-        selected_shop_items = []
-        for shop_item in item.shop_items:
-            if shop_item.selected:
-                selected_shop_items.append(shop_item)
-        if len(selected_shop_items) > 0:
-            while len(selected_shop_items) > 1:
-                shop_item = selected_shop_items.pop()
-                new_item = Item(name=shop_item.name, price=shop_item.price, url=shop_item.link)
-                new_item.select_shop_item(shop_item)
-                self.wu_list.create_item(new_item)
-                shop_item.selected = False
-                if unmark:
-                    for sub in self.wu_list.client.get_task_subtasks(iid):
-                        if shop_item == ShopItem.parse(sub['title']):
-                            self.wu_list.client.update_subtask(sub['id'], sub['revision'], completed=False)
-            item.select_shop_item(selected_shop_items.pop())
-
     def new_item(self, task):
         self.logger.info("new - " + task['title'].encode('utf-8'))
         iid = task['id']
         item = self.wu_list.item_from_task(task)
-        self.split_items(item, iid)
 
         shop_items = self.shop.search(item.name, item.sub_name)
         item.set_shop_items(shop_items)
+        if item.selected_item:
+            self.choice.remember_choice(item)
+        else:
+            self.choice.match(item)
 
         if item.selected_item:
             self.shop.take(item.selected_shop_item())
@@ -158,14 +143,13 @@ class ShopSync:
     def update_item(self, task):
         self.logger.info("Update - " + task['title'].encode('utf-8'))
         iid = task['id']
-        item = self.wu_list.item_from_task(task)
+        item = self.wu_list.item_from_task(task, unmark=True)
         existing = self.shop_items[iid]
 
         if item != existing:
             self.remove_item_by_id(iid)
             self.new_item(task)
         else:
-            self.split_items(item, iid, unmark=True)
             update = False
             if item.synced() and not existing.synced():
                 existing.select_shop_item(item.selected_shop_item())
@@ -182,6 +166,7 @@ class ShopSync:
                     self.shop.take(existing.selected_shop_item())
                     update = True
             if update:
+                self.choice.remember_choice(existing)
                 new_revision = self.wu_list.client.get_task(iid)['revision']
                 self.shop_task_revs[iid] = new_revision
                 self.wu_list.client.update_task(iid, new_revision, title=existing.title())
@@ -216,3 +201,32 @@ class ShopSync:
             self.shop_task_revs.pop(iid)
 
         return new, changed, deleted
+
+
+class Choice:
+    def __init__(self, file_name):
+        self.file_name = file_name
+        self.matches = self.load()
+
+    def save(self):
+        with open(self.file_name, 'w') as f:
+            pickle.dump(self.matches, f)
+
+    def load(self):
+        try:
+            with open(self.file_name) as f:
+                return pickle.load(f)
+        except IOError:
+            return {}
+
+    def remember_choice(self, item):
+        if item.synced():
+            self.matches[item.name] = item.selected_shop_item().name
+            self.save()
+
+    def match(self, item):
+        if item.name in self.matches:
+            shop_item_name = self.matches[item.name]
+            for shop_item in item.shop_items:
+                if shop_item.name == shop_item_name:
+                    item.select_shop_item(shop_item)

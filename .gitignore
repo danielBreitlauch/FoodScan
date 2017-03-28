@@ -5,3 +5,4 @@ chromedriver
 ghostdriver*
 simplelog.log
 *.pyc
+/choices.db
