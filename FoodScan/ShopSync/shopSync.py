@@ -152,7 +152,13 @@ class ShopSync:
         else:
             update = False
             if item.synced() and not existing.synced():
+                self.logger.info("before-update-item synced, existing not")
+                self.logger.info(item.selected_shop_item())
+                self.logger.info(existing.selected_shop_item())
                 existing.select_shop_item(item.selected_shop_item())
+                self.logger.info("after-update-item synced, existing not")
+                self.logger.info(item.selected_shop_item())
+                self.logger.info(existing.selected_shop_item())
                 self.shop.take(existing.selected_shop_item())
                 update = True
             if not item.synced() and existing.synced():
