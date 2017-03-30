@@ -120,18 +120,17 @@ class Kaufland(Shop):
         html = self.get(Kaufland.search_url(term))
         ids = self.parse_search(html)
 
-        if len(ids) > 0:
+        if 0 < len(ids) < 48:
             return self.order_by_matches(term, ids)
 
-        if sub_term:
+        if sub_term and len(ids) == 0:
             return self.search(term + " " + sub_term)
 
-        if len(term.split()) == 1:
-            return []
-
-        for criteria in term.split():
-            if len(criteria) > 1:
-                ids += self.search(criteria)
+        if len(term.split()) > 1:
+            ids = []
+            for criteria in term.split():
+                if len(criteria) > 1:
+                    ids += self.search(criteria)
         return self.order_by_matches(term, ids, max=20, perfect=0.6, cut_off=0.25)
 
     def parse_search(self, html):
@@ -156,23 +155,32 @@ class Kaufland(Shop):
         return ids
 
     def order_by_matches(self, term, ids, max=None, perfect=None, cut_off=None):
+        if len(ids) == 0:
+            return []
         fit = {}
         perfect_fit = {}
+        nids = []
+        pids = []
         terms = len(term.split())
         for item in ids:
+            if item in nids or item in pids:
+                continue
             match = 0
             for criteria in term.split():
                 if criteria.lower() in item.name.lower():
                     match += 1
             if not cut_off or match > terms * cut_off:
+                nids.append(item)
                 fit[item] = match
             if perfect and match > terms * perfect:
+                pids.append(item)
                 perfect_fit[item] = match
 
         if len(perfect_fit) > 0:
+            nids = pids
             fit = perfect_fit
 
-        ordered = sorted(ids, key=fit.__getitem__, reverse=True)
+        ordered = sorted(nids, key=fit.__getitem__, reverse=True)
         if max:
             ordered = ordered[:max]
         return ordered
