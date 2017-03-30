@@ -172,7 +172,7 @@ class Kaufland(Shop):
         if len(perfect_fit) > 0:
             fit = perfect_fit
 
-        ordered = sorted(fit, key=fit.__getitem__, reverse=True)
+        ordered = sorted(ids, key=fit.__getitem__, reverse=True)
         if max:
             ordered = ordered[:max]
         return ordered
