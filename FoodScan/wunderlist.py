@@ -35,8 +35,20 @@ class WuList:
     def create_item(self, item):
         task = self.client.create_task(self.list_id, title=item.title())
         self.client.create_note(task['id'], item.note())
-        for shop_item in item.shop_items:
-            self.client.create_subtask(task['id'], unicode(shop_item), completed=shop_item.selected)
+        self.task_position(task['id'], 0)
+
+        if item.shop_items:
+            for shop_item in item.shop_items:
+                self.client.create_subtask(task['id'], unicode(shop_item), completed=shop_item.selected)
+
+    def task_position(self, iid, position):
+        pos = self.client.get_task_positions_objs(self.list_id)[0]
+        v = pos['values']
+        if iid != v[position]:
+            if iid in v:
+                v.remove(iid)
+            v.insert(position, iid)
+        self.client.update_task_positions_obj(pos['id'], pos['revision'], v)
 
     def split_items(self, item, iid, sub_tasks, unmark):
         task = self.client.get_task(iid)
@@ -50,22 +62,23 @@ class WuList:
                 selected_shop_items.append(shop_item)
 
         if len(selected_shop_items) > 0:
-            completed = True
-            for t in sub_tasks:
-                completed = completed and t['completed']
-            if completed:
-                self.logger.info("all subtasks completed before split: " + item.name.encode('utf-8'))
-                return
+            if len(selected_shop_items) > 1:
+                completed = True
+                for t in sub_tasks:
+                    completed = completed and t['completed']
+                if completed:
+                    self.logger.info("all subtasks completed before split: " + item.name.encode('utf-8'))
+                    return
 
-            while 1 < len(selected_shop_items):
-                shop_item = selected_shop_items.pop()
-                self.logger.info("splitting of: " + shop_item.name.encode('utf-8'))
-                new_item = Item(name=shop_item.name, price=shop_item.price, url=shop_item.link)
-                new_item.select_shop_item(shop_item)
-                self.create_item(new_item)
-                shop_item.selected = False
-                if unmark:
-                    for sub in sub_tasks:
-                        if shop_item == ShopItem.parse(sub['title']):
-                            self.client.update_subtask(sub['id'], sub['revision'], completed=False)
+                while len(selected_shop_items) > 1:
+                    shop_item = selected_shop_items.pop()
+                    self.logger.info("splitting of: " + shop_item.name.encode('utf-8'))
+                    new_item = Item(name=shop_item.name, price=shop_item.price, url=shop_item.link)
+                    new_item.select_shop_item(shop_item)
+                    self.create_item(new_item)
+                    shop_item.selected = False
+                    if unmark:
+                        for sub in sub_tasks:
+                            if shop_item == ShopItem.parse(sub['title']):
+                                self.client.update_subtask(sub['id'], sub['revision'], completed=False)
             item.select_shop_item(selected_shop_items.pop())
