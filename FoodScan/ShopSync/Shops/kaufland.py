@@ -3,6 +3,7 @@
 import pickle
 import time
 import urlparse
+import re
 from urllib2 import quote
 
 from bs4 import BeautifulSoup
@@ -120,18 +121,21 @@ class Kaufland(Shop):
         html = self.get(Kaufland.search_url(term))
         ids = self.parse_search(html)
 
+        split_terms = [x for x in re.split('-| |\n', term) if len(x) > 1]
+
         if 0 < len(ids) < 48:
-            return self.order_by_matches(term, ids)
+            return self.order_by_matches(split_terms, ids)
 
         if sub_term and len(ids) == 0:
             return self.search(term + " " + sub_term)
 
-        if len(term.split()) > 1:
+        if len(split_terms) > 1:
             ids = []
-            for criteria in term.split():
+            for criteria in split_terms:
                 if len(criteria) > 1:
                     ids += self.search(criteria)
-        return self.order_by_matches(term, ids, max=20, perfect=0.6, cut_off=0.25)
+
+        return self.order_by_matches(split_terms, ids, max=20, perfect=0.6, cut_off=0.25)
 
     def parse_search(self, html):
         blob = BeautifulSoup(html, "html.parser")
@@ -154,33 +158,29 @@ class Kaufland(Shop):
                 ids.append(item)
         return ids
 
-    def order_by_matches(self, term, ids, max=None, perfect=None, cut_off=None):
+    def order_by_matches(self, terms, ids, max=None, perfect=None, cut_off=None):
         if len(ids) == 0:
             return []
-        fit = {}
+        normal_fit = {}
         perfect_fit = {}
-        nids = []
-        pids = []
-        terms = len(term.split())
+        normal_ids = []
+        perfect_ids = []
         for item in ids:
-            if item in nids or item in pids:
+            if item in normal_ids or item in perfect_ids:
                 continue
-            match = 0
-            for criteria in term.split():
-                if criteria.lower() in item.name.lower():
-                    match += 1
-            if not cut_off or match > terms * cut_off:
-                nids.append(item)
-                fit[item] = match
-            if perfect and match > terms * perfect:
-                pids.append(item)
+            match = len([x for x in terms if x.lower() in item.name.lower()])
+            if not cut_off or match > len(terms) * cut_off:
+                normal_ids.append(item)
+                normal_fit[item] = match
+            if perfect and match > len(terms) * perfect:
+                perfect_ids.append(item)
                 perfect_fit[item] = match
 
         if len(perfect_fit) > 0:
-            nids = pids
-            fit = perfect_fit
+            normal_ids = perfect_ids
+            normal_fit = perfect_fit
 
-        ordered = sorted(nids, key=fit.__getitem__, reverse=True)
+        ordered = sorted(normal_ids, key=normal_fit.__getitem__, reverse=True)
         if max:
             ordered = ordered[:max]
         return ordered
