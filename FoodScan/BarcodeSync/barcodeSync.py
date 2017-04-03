@@ -31,7 +31,7 @@ class BarcodeSync:
         tasks = self.wu_list.client.get_tasks(self.wu_list.list_id)
 
         for task in tasks:
-            if item.name in task['title']:
+            if item.name.lower() in task['title'].lower():
                 existing = self.wu_list.item_from_task(task, with_selects=False)
                 existing.inc_amount()
                 self.wu_list.client.update_task(task['id'], task['revision'], title=existing.title())
@@ -39,7 +39,7 @@ class BarcodeSync:
 
         for task in tasks:
             existing = self.wu_list.item_from_task(task)
-            if existing.synced() and item.name in existing.selected_shop_item().name:
+            if existing.synced() and item.name.lower() in existing.selected_shop_item().name.lower():
                 existing.inc_amount()
                 self.wu_list.client.update_task(task['id'], task['revision'], title=existing.title())
                 return
