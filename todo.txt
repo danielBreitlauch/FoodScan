@@ -1,5 +1,3 @@
-remember mappings from list item to shop item
-
 whole cart data list
     total price
     delivery date

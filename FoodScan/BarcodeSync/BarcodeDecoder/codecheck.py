@@ -12,7 +12,7 @@ class CodeCheck(BarcodeDecoder):
 
     def __init__(self):
         BarcodeDecoder.__init__(self)
-        self.logger = Logger('Codechecker')
+        self.logger = Logger('Codecheck')
 
     @staticmethod
     def url(barcode):
