@@ -31,7 +31,16 @@ Installation
 
 FoodScan is compatible with Python 2.7.  
 There will be a pip package in the future.  
-Until then... 
+Until then...
+This software used the usb barcode scanner from https://github.com/riklaunim/pyusb-keyboard-alike
+
+Install one of these packages: libusb 1.0, libusb 0.1 or OpenUSB:
+
+```
+sudo apt-get install python libusb-1.0-0
+```
+
+then:
 ```
 python ./setup.py install
 ```
