@@ -3,6 +3,9 @@ from FoodScan.items import *
 import wunderpy2
 from pysimplelog import Logger
 
+import requests
+requests.packages.urllib3.util.ssl_.DEFAULT_CIPHERS = 'ECDH+AESGCM:DH+AESGCM:ECDH+AES256:DH+AES256:ECDH+AES128:DH+AES:ECDH+3DES:DH+3DES:RSA+AESGCM:RSA+AES:RSA+3DES:!aNULL:!MD5:!DSS'
+
 
 class WuList:
     def __init__(self, client_id, token, list_id):
