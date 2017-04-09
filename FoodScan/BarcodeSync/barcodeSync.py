@@ -18,12 +18,12 @@ class BarcodeSync:
     def listen(self):
         while True:
             try:
-                barcode = self.barcode_reader.scan()
-                item = self.barcode_descriptor.item(barcode)
-                if item:
-                    self.logger.info("Detected: " + item.name.encode('utf-8'))
-                    self.add_barcode(item)
-
+                barcodes = self.barcode_reader.scan().split()
+                for barcode in barcodes:
+                    item = self.barcode_descriptor.item(barcode)
+                    if item:
+                        self.logger.info("Detected: " + item.name.encode('utf-8'))
+                        self.add_barcode(item)
             except Exception:
                 traceback.print_exc()
 
