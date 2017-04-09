@@ -1,7 +1,6 @@
 import usb.core
 import usb.util
-
-from keyboard_alike import mapping
+import mapping
 
 
 class DeviceException(Exception):
@@ -50,7 +49,8 @@ class Reader(object):
             if self.should_reset:
                 self._device.reset()
         except usb.core.USBError as e:
-            raise DeviceException('Could not set configuration: %s' % str(e))
+            pass
+            # raise DeviceException('Could not set configuration: %s' % str(e))
 
         self._endpoint = self._device[0][(0, 0)][0]
 
