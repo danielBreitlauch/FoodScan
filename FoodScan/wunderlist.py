@@ -47,11 +47,11 @@ class WuList:
     def task_position(self, iid, position):
         pos = self.client.get_task_positions_objs(self.list_id)[0]
         v = pos['values']
-        if iid != v[position]:
+        if len(v) <= position or iid != v[position]:
             if iid in v:
                 v.remove(iid)
             v.insert(position, iid)
-        self.client.update_task_positions_obj(pos['id'], pos['revision'], v)
+            self.client.update_task_positions_obj(pos['id'], pos['revision'], v)
 
     def split_items(self, item, iid, sub_tasks, unmark):
         task = self.client.get_task(iid)
