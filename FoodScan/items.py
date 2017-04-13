@@ -28,7 +28,7 @@ class ShopItem:
     @classmethod
     def parse(cls, string):
         price_end = string.find(u'€ ')
-        name_end = string.find(u' (', price_end)
+        name_end = string.rfind(u' (', price_end)
         link_end = string.find(u')', name_end)
 
         price = int(float(string[:price_end]) * 100)

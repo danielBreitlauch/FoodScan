@@ -35,10 +35,10 @@ class AllYouNeed(Shop):
         self.take_url = 'https://www.allyouneedfresh.de/responsive/pages/checkout1.jsf'
 
         self.take_page_view_state = None
-        Shop.__init__(self, email, password, cookie_file)
         self.driver = webdriver.PhantomJS(executable_path='/usr/local/bin/phantomjs')
         # self.driver = webdriver.Chrome('./chromedriver')
         self.driver.set_window_size(1280, 1024)
+        Shop.__init__(self, email, password, cookie_file)
 
     @staticmethod
     def search_url(name):
