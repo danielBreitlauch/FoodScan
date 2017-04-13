@@ -22,18 +22,13 @@ class WuList:
 
     def item_from_task(self, task, with_selects=True, unmark=False, split=True):
         notes = self.client.get_task_notes(task['id'])
-        if len(notes) > 0:
-            notes = notes[0]['content']
-        else:
-            notes = u""
+        notes = notes[0]['content'] if len(notes) > 0 else u""
 
-        sub_tasks = []
-        if with_selects:
-            sub_tasks = self.client.get_task_subtasks(task['id'])
+        sub_tasks = self.client.get_task_subtasks(task['id']) if with_selects else []
 
         item = Item.parse(task['title'], notes, sub_tasks)
-        if split:
-            self.split_items(item, task['id'], sub_tasks, unmark)
+        #if split:
+        #    self.split_items(item, task['id'], sub_tasks, unmark)
         return item
 
     def create_item(self, item):
@@ -60,12 +55,9 @@ class WuList:
             self.logger.info("task got completed before split: " + item.name.encode('utf-8'))
             return
 
-        selected_shop_items = []
-        for shop_item in item.shop_items:
-            if shop_item.selected:
-                selected_shop_items.append(shop_item)
+        selected_shop_items = [shop_item for shop_item in item.shop_items if shop_item.selected]
 
-        if len(selected_shop_items) > 0:
+        if 0 < len(selected_shop_items) < len(item.shop_items):
             if len(selected_shop_items) > 1:
                 completed = True
                 for t in sub_tasks:
