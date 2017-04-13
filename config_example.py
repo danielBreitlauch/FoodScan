@@ -1,11 +1,9 @@
-
 # all
 wunderlist_client_id = "client_id"
 wunderlist_token = "generated token"
 
 barcode_sync_config = {
-    "vendor": 0x08ff,
-    "product": 0x0009,
+    "barcode_device": "/dev/input/event0",
     "wunderlist_list_id": 123456789
 }
 
