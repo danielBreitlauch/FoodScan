@@ -59,18 +59,26 @@ class BarcodeSync:
 
         for task in tasks:
             if item.name.lower() in task['title'].lower():
-                existing = self.wu_list.item_from_task(task, with_selects=False)
-                existing.inc_amount()
-                self.wu_list.client.update_task(task['id'], task['revision'], title=existing.title())
-                return
+                while True:
+                    try:
+                        existing = self.wu_list.item_from_task(task, with_selects=False, split=False)
+                        existing.inc_amount()
+                        self.wu_list.client.update_task(task['id'], task['revision'], title=existing.title())
+                        return
+                    except Exception:
+                        self.logger.warn("Exception during wunderlist add task")
+                        task = self.wu_list.client.get_task(task['id'])
 
         for task in tasks:
-            existing = self.wu_list.item_from_task(task)
+            existing = self.wu_list.item_from_task(task, split=False)
             if existing.synced() and item.name.lower() in existing.selected_shop_item().name.lower():
-                existing.inc_amount()
-                self.wu_list.client.update_task(task['id'], task['revision'], title=existing.title())
-                return
+                while True:
+                    try:
+                        existing.inc_amount()
+                        self.wu_list.client.update_task(task['id'], task['revision'], title=existing.title())
+                        return
+                    except Exception:
+                        self.logger.warn("Exception during wunderlist add task")
+                        task = self.wu_list.client.get_task(task['id'])
 
         self.wu_list.create_item(item)
-
-

@@ -20,7 +20,7 @@ class WuList:
 
         self.client.create_webhook(self.list_id, url + ":" + str(port), "generic")
 
-    def item_from_task(self, task, with_selects=True, unmark=False):
+    def item_from_task(self, task, with_selects=True, unmark=False, split=True):
         notes = self.client.get_task_notes(task['id'])
         if len(notes) > 0:
             notes = notes[0]['content']
@@ -32,7 +32,8 @@ class WuList:
             sub_tasks = self.client.get_task_subtasks(task['id'])
 
         item = Item.parse(task['title'], notes, sub_tasks)
-        self.split_items(item, task['id'], sub_tasks, unmark)
+        if split:
+            self.split_items(item, task['id'], sub_tasks, unmark)
         return item
 
     def create_item(self, item):
