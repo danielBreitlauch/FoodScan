@@ -17,7 +17,7 @@ class ShopSync:
         self.shop_list_rev = 0
         self.shop_task_revs = {}
         self.shop_items = {}
-        self.choice = Choice("choices.db")
+        self.choice = Choice("choices-" + shop.__class__.__name__ + ".db")
         if web_hook_url:
             self.web_hook_url = web_hook_url
             self.web_server_ip = web_server_ip
