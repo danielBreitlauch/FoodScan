@@ -173,9 +173,15 @@ class ShopSync:
                     update = True
             if update:
                 self.choice.remember_choice(existing)
-                new_revision = self.wu_list.client.get_task(iid)['revision']
-                self.shop_task_revs[iid] = new_revision
-                self.wu_list.client.update_task(iid, new_revision, title=existing.title())
+                while True:
+                    try:
+                        new_revision = self.wu_list.client.get_task(iid)['revision']
+                        self.shop_task_revs[iid] = new_revision
+                        self.wu_list.client.update_task(iid, new_revision, title=existing.title())
+                        break
+                    except ValueError:
+                        pass
+
 
     def detect_changed_tasks(self):
         self.shop_list_rev = self.wu_list.client.get_list(self.wu_list.list_id)['revision']
