@@ -143,6 +143,10 @@ class AllYouNeed(Shop):
             if details:
                 details.extract()
 
+            span = desc.find('span', class_='text-nowrap')
+            if span:
+                span.replace_with('')
+
             desc = desc.text.strip().replace('\n', ', ')
             for c in i['class']:
                 if 'artId' in c:
