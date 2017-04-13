@@ -1,6 +1,9 @@
 import select
 import struct
+import traceback
 from pysimplelog import Logger
+import Queue
+from thread import start_new_thread
 
 
 class BarcodeReader:
@@ -8,12 +11,24 @@ class BarcodeReader:
     def __init__(self, device):
         self.logger = Logger('Barcode scan')
         self.file = open(device, 'rb')
+        self.q = Queue.Queue()
+        start_new_thread(self.scan, ())
 
     def scan(self):
-        self.logger.info('Waiting for scanner data')
+        while True:
+            try:
+                self.logger.info('Waiting for scanner data')
 
+                scanner_data = self.read()
+                barcodes = self.parse(scanner_data).split()
+                for barcode in barcodes:
+                    self.logger.info("Scanned barcode '{0}'".format(barcode))
+                    self.q.put(barcode)
+            except Exception:
+                traceback.print_exc()
+
+    def read(self):
         # Wait for binary data from the scanner and then read it
-        scan_complete = False
         scanner_data = ''
         while True:
             read_list, _, _ = select.select([self.file], [], [], 0.1)
@@ -27,17 +42,11 @@ class BarcodeReader:
                 # There are 4 more keystrokes sent after the one we matched against,
                 # so we flush out that buffer before proceeding:
                 [fd.read(16) for _ in range(4)]
-                scan_complete = True
-            if scan_complete:
-                break
-
-        # Parse the binary data as a barcode
-        barcode = self.parse(scanner_data)
-        self.logger.info("Scanned barcode '{0}'".format(barcode))
-        return barcode
+                return scanner_data
 
     @staticmethod
     def parse(scanner_data):
+        # Parse the binary data as a barcode
         upc_chars = []
         for i in range(0, len(scanner_data), 16):
             chunk = scanner_data[i:i + 16]
