@@ -54,7 +54,7 @@ python sync_shop.py
 
 ### Choose a grocery store: Kaufland or AllYouNeed: ###
 
-1. You can chose a shop implementation. Some shops need a Captcha solving service account.
+1. You can choose a shop implementation. Some shops need a Captcha solving service account.
 
 ```
 kl = Kaufland(kaufland_email, kaufland_password, AntiCaptcha(anti_captcha_key))
