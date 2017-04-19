@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import unicodedata
 import pickle
 import time
 import urlparse
@@ -112,6 +113,8 @@ class Kaufland(Shop):
             price = price.text.replace(u'€', u'').strip()
             price = int(float(price) * 100)
 
+            title = unicodedata.normalize('NFKC', title)
+
             item = ShopItem(article_id, amount, title, price, link)
             ids.append(item)
 
@@ -153,6 +156,8 @@ class Kaufland(Shop):
                     price = a.find('div', {'class': 'product-tile__price--reduced'})
                 price = price.text.replace(u'€', u'').strip()
                 price = int(float(price) * 100)
+
+                title = unicodedata.normalize('NFKC', title)
 
                 item = ShopItem(article_id, 1, title, price, link)
                 ids.append(item)
