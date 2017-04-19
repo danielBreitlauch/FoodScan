@@ -4,9 +4,10 @@ from thread import start_new_thread
 from time import sleep
 import traceback
 from pysimplelog import Logger
-
 from werkzeug.wrappers import Request, Response
 from werkzeug.serving import run_simple
+
+from FoodScan.ShopSync.metaShop import MetaShop, MetaShopItem
 
 
 class ShopSync:
@@ -14,6 +15,7 @@ class ShopSync:
         self.logger = Logger('ShopSync')
         self.shop = shop
         self.wu_list = wu_list
+        self.meta = MetaShop(self, wu_list)
         self.shop_list_rev = 0
         self.shop_task_revs = {}
         self.shop_items = {}
@@ -59,7 +61,7 @@ class ShopSync:
         if self.shop_list_rev == self.wu_list.client.get_list(self.wu_list.list_id)['revision']:
             return False
 
-        new, changed, deleted_ids = self.detect_changed_tasks()
+        new, changed, deleted_ids, meta_changed = self.detect_changed_tasks()
         for iid in deleted_ids:
             self.remove_item_by_id(iid)
 
@@ -69,30 +71,56 @@ class ShopSync:
         for task in changed:
             self.update_item(task)
 
-        return len(new) + len(changed) + len(deleted_ids) > 0
+        if meta_changed:
+            self.meta.sync()
 
-    def detect_cart_list_differences(self):
-        cart_items = self.shop.cart()
-        tasks = self.wu_list.client.get_tasks(self.wu_list.list_id)
-        shop_items = []
-        change = False
+        self.update_meta()
 
-        for task in tasks:
-            item = self.wu_list.item_from_task(task)
-            shop_item = item.selected_shop_item()
-            if shop_item:
-                shop_items.append(shop_item)
-                if shop_item not in cart_items:
-                    self.logger.warn("Task item without shop item: " + shop_item.name.encode('utf-8'))
-                    change = True
-                    existing = self.shop_items[task['id']]
-                    if existing.selected_shop_item():
-                        self.shop.take(existing.selected_shop_item())
+        return len(new) + len(changed) + len(deleted_ids) > 0 or meta_changed
 
-        for cart_item in cart_items:
-            if cart_item not in shop_items:
-                self.logger.warn("Cart item without task: " + cart_item.name.encode('utf-8'))
-        return change
+    def update_meta(self):
+        shop_items = [item.selected_shop_item() for item in self.shop_items.values() if item.synced()]
+        price = 0
+        for s in shop_items:
+            price += s.amount * s.price
+
+        self.meta.set_price(price)
+
+    def detect_changed_tasks(self):
+        self.shop_list_rev = self.wu_list.client.get_list(self.wu_list.list_id)['revision']
+        new_tasks = self.wu_list.client.get_tasks(self.wu_list.list_id)
+
+        meta_changed = self.meta.detect_changes(new_tasks)
+
+        changed = []
+        new = []
+        for new_task in new_tasks:
+            if MetaShopItem.is_meta_item(new_task):
+                continue
+            iid = new_task['id']
+            revision = new_task['revision']
+            if iid in self.shop_task_revs:
+                if self.shop_task_revs[iid] != revision:
+                    self.shop_task_revs[iid] = revision
+                    changed.append(new_task)
+            else:
+                self.shop_task_revs[iid] = revision
+                new.append(new_task)
+
+        deleted_ids = []
+        for iid in self.shop_task_revs:
+            found = False
+            for new_task in new_tasks:
+                if iid == new_task['id']:
+                    found = True
+                    break
+            if not found:
+                deleted_ids.append(iid)
+
+        for iid in deleted_ids:
+            self.shop_task_revs.pop(iid)
+
+        return new, changed, deleted_ids, meta_changed
 
     def remove_item_by_id(self, iid):
         item = self.shop_items.pop(iid)
@@ -116,29 +144,8 @@ class ShopSync:
         if item.selected_item:
             self.shop.take(item.selected_shop_item())
 
-        for sub in self.wu_list.client.get_task_subtasks(iid):
-            self.wu_list.client.delete_subtask(sub['id'], sub['revision'])
-
-        for shop_item in item.shop_items:
-            self.wu_list.client.create_subtask(iid, unicode(shop_item), completed=shop_item.selected)
-
-        notes = self.wu_list.client.get_task_notes(iid)
-        if len(notes) == 1:
-            if notes[0]['content'] != item.note():
-                self.wu_list.client.delete_note(notes[0]['id'], notes[0]['revision'])
-                self.wu_list.client.create_note(iid, item.note())
-        else:
-            self.wu_list.client.create_note(iid, item.note())
-
         self.shop_items[iid] = item
-        while True:
-            try:
-                new_revision = self.wu_list.client.get_task(iid)['revision']
-                self.shop_task_revs[iid] = new_revision
-                self.wu_list.client.update_task(iid, new_revision, title=item.title())
-                break
-            except ValueError:
-                pass
+        self.wu_list.update_item(task, item, rebuild_notes=True, rebuild_subs=True)
 
     def update_item(self, task):
         self.logger.info("Update - " + task['title'].encode('utf-8'))
@@ -152,13 +159,7 @@ class ShopSync:
         else:
             update = False
             if item.synced() and not existing.synced():
-                self.logger.info("before-update-item synced, existing not")
-                self.logger.info(item.selected_shop_item())
-                self.logger.info(existing.selected_shop_item())
                 existing.select_shop_item(item.selected_shop_item())
-                self.logger.info("after-update-item synced, existing not")
-                self.logger.info(item.selected_shop_item())
-                self.logger.info(existing.selected_shop_item())
                 self.shop.take(existing.selected_shop_item())
                 update = True
             if not item.synced() and existing.synced():
@@ -173,46 +174,51 @@ class ShopSync:
                     update = True
             if update:
                 self.choice.remember_choice(existing)
-                while True:
-                    try:
-                        new_revision = self.wu_list.client.get_task(iid)['revision']
-                        self.shop_task_revs[iid] = new_revision
-                        self.wu_list.client.update_task(iid, new_revision, title=existing.title())
-                        break
-                    except ValueError:
-                        pass
+                self.shop_task_revs[iid] = self.wu_list.update_item(task, existing)
 
+    def detect_cart_list_differences(self):
+        cart_items = self.shop.cart()
+        tasks = self.wu_list.client.get_tasks(self.wu_list.list_id)
+        shop_items = []
 
-    def detect_changed_tasks(self):
-        self.shop_list_rev = self.wu_list.client.get_list(self.wu_list.list_id)['revision']
-        new_tasks = self.wu_list.client.get_tasks(self.wu_list.list_id)
-        changed = []
-        new = []
-        for new_task in new_tasks:
-            iid = new_task['id']
-            revision = new_task['revision']
-            if iid in self.shop_task_revs:
-                if self.shop_task_revs[iid] != revision:
-                    self.shop_task_revs[iid] = revision
-                    changed.append(new_task)
-            else:
-                self.shop_task_revs[iid] = revision
-                new.append(new_task)
+        msg0 = ""
+        msg1 = ""
+        for task in tasks:
+            if MetaShopItem.is_meta_item(task):
+                continue
 
-        deleted = []
-        for iid in self.shop_task_revs:
-            found = False
-            for new_task in new_tasks:
-                if iid == new_task['id']:
-                    found = True
-                    break
-            if not found:
-                deleted.append(iid)
+            item = self.wu_list.item_from_task(task)
+            shop_item = item.selected_shop_item()
+            if shop_item:
+                shop_items.append(shop_item)
+                if shop_item in cart_items:
+                    for c in cart_items:
+                        if c.name == shop_item.name:
+                            if shop_item.amount != c.amount:
+                                self.logger.warn("Task item and shop item amounts differ: " + shop_item.name.encode('utf-8'))
+                                msg0 += shop_item.name.encode('utf-8') + ": " + str(shop_item.amount) + " vs. " + str(c.amount) + "\n"
+                            break
+                else:
+                    self.logger.warn("Task item without shop item: " + shop_item.name.encode('utf-8'))
+                    msg1 += " - " + shop_item.name.encode('utf-8') + "\n"
 
-        for iid in deleted:
-            self.shop_task_revs.pop(iid)
+        msg2 = ""
+        for cart_item in cart_items:
+            if cart_item not in shop_items:
+                self.logger.warn("Cart item without task: " + cart_item.name.encode('utf-8'))
+                msg2 += " + " + cart_item.name.encode('utf-8') + "\n"
 
-        return new, changed, deleted
+        msg = ""
+        if msg0:
+            msg += "Mengenunterschiede: Liste vs. Einkaufswagen\n" + msg0
+
+        if msg1:
+            msg += "\nNicht im Einkaufswagen gefunden:\n" + msg1
+
+        if msg2:
+            msg += "\nNicht auf der Liste gefunden:\n" + msg2
+
+        return msg
 
 
 class Choice:

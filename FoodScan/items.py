@@ -1,17 +1,66 @@
 # -*- coding: utf-8 -*-
+import abc
 
 
-class ShopItem:
-    def __init__(self, article_id, amount, name, price, link, selected=False):
+class SubItem:
+    def __init__(self):
+        pass
+
+    @abc.abstractmethod
+    def title(self):
+        raise NotImplementedError('users must define __str__ to use this base class')
+
+    @abc.abstractmethod
+    def selected(self):
+        raise NotImplementedError('users must define __str__ to use this base class')
+
+    @classmethod
+    @abc.abstractmethod
+    def parse(cls, string):
+        raise NotImplementedError('users must define __str__ to use this base class')
+
+
+class ListItem:
+    def __init__(self):
+        pass
+
+    @abc.abstractmethod
+    def title(self):
+        raise NotImplementedError('users must define __str__ to use this base class')
+
+    @abc.abstractmethod
+    def note(self):
+        raise NotImplementedError('users must define __str__ to use this base class')
+
+    @abc.abstractmethod
+    def position(self):
+        raise NotImplementedError('users must define __str__ to use this base class')
+
+    @abc.abstractmethod
+    def sub_items(self):
+        raise NotImplementedError('users must define __str__ to use this base class')
+
+    @classmethod
+    @abc.abstractmethod
+    def parse(cls, title, notes, sub_tasks):
+        raise NotImplementedError('users must define __str__ to use this base class')
+
+
+class ShopItem(SubItem):
+    def __init__(self, article_id, amount, name, price, link, select=False):
+        SubItem.__init__(self)
         self.article_id = article_id
         self.amount = amount
         self.name = name
         self.price = price
         self.link = link
-        self.selected = selected
+        self.select = select
 
-    def __unicode__(self):
+    def title(self):
         return str(self.price / 100.0) + u'€ ' + self.name + u' (' + self.link + u')'
+
+    def selected(self):
+        return self.select
 
     def __eq__(self, other):
         return other and self.price == other.price and self.link == other.link
@@ -38,9 +87,9 @@ class ShopItem:
         return ShopItem(None, None, name, price, link)
 
 
-class Item:
-
+class Item(ListItem):
     def __init__(self, name, sub_name=None, price=None, ingredients=None, ratings=None, url=None, amount=1, num_rating=0):
+        ListItem.__init__(self)
         self.name = name
         self.sub_name = sub_name
         self.price = price
@@ -66,9 +115,9 @@ class Item:
             item.amount = self.amount
             self.shop_items.append(item)
 
-            if item == self.selected_item or item.selected:
+            if item == self.selected_item or item.selected():
                 self.selected_item = item
-                self.selected_item.selected = True
+                self.selected_item.select = True
                 selected_replaced = True
 
         if self.selected_item and not selected_replaced:
@@ -84,7 +133,7 @@ class Item:
             for i in self.shop_items:
                 if i == item:
                     self.selected_item = i
-                    self.selected_item.selected = True
+                    self.selected_item.select = True
                     self.selected_item.amount = self.amount
 
     def selected_shop_item(self):
@@ -140,6 +189,15 @@ class Item:
 
         return note
 
+    def position(self):
+        return None
+
+    def sub_items(self):
+        if self.shop_items:
+            return self.shop_items
+        else:
+            return []
+
     @classmethod
     def parse(cls, title, notes, sub_tasks):
         name, amount, price, num_rating = cls.parse_title(title)
@@ -158,12 +216,6 @@ class Item:
 
     @classmethod
     def parse_title(cls, title):
-        shop_state = None
-        if title[0] == u"\u2713":
-            shop_state = "synced"
-        elif title[0] == u"\u2605":
-            shop_state = "searched"
-
         if title[0] == u"\u2713" or title[0] == u"\u2605":
             title = title[2:]
 
@@ -206,12 +258,12 @@ class Item:
             sub_name = None
             url_pos_end = notes.find('\n\n')
 
-        url = notes[url_pos_start+2:url_pos_end]
+        url = notes[url_pos_start + 2:url_pos_end]
 
         if notes.find("\nInhalt:\n") < 0:
             return url, None, None, sub_name
 
-        notes = notes[url_pos_end+2:]
+        notes = notes[url_pos_end + 2:]
         ratings_end = notes.find("\nInhalt:\n")
 
         end = 0
@@ -230,7 +282,7 @@ class Item:
         shop_items = []
         for item in sub_tasks:
             shop_item = ShopItem.parse(item['title'])
-            shop_item.selected = item['completed']
+            shop_item.select = item['completed']
             shop_items.append(shop_item)
 
         return shop_items
