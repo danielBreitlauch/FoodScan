@@ -1,12 +1,15 @@
 # -*- coding: utf-8 -*-
 from pysimplelog import Logger
 
+from FoodScan import WuList
+from FoodScan.BringSync import Bring
+
 
 class BringSync:
-    def __init__(self, bring, wu_list):
+    def __init__(self, config):
         self.logger = Logger('BringSync')
-        self.wu_list = wu_list
-        self.bring = bring
+        self.wu_list = WuList(config)
+        self.bring = Bring(config)
 
     def transfer_bring_list_action(self):
         tasks = self.wu_list.list_items()

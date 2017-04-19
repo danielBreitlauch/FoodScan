@@ -6,7 +6,7 @@ About
 --------
 
 FoodScan allows you to use a barcode scanner to put items into a wunderlist grocery shopping list.
-After that the script syncs the list items with the shopping cart.
+After that the script syncs the list items with the shopping cart of an online grocery shop.
 The list items get enhanced with information from the grocery shop.
 If the grocery shop provides multiple results these results can be selected from sub-tasks.
 
@@ -40,6 +40,9 @@ Run
 --------
 
 Generally edit config.py.
+```
+cp config_example.py config.py
+```
 
 ### Use existing scripts: ###
 ```
@@ -49,29 +52,7 @@ python sync_bring.py
 python sync_shop.py
 ```
 
-### Write your own scripts: ###
-
-### Barcode scanner import to wunderlist: ###
-```
-from config import *
-wl = WuList(wunderlist_client_id, wunderlist_token, barcode_sync_config['wunderlist_list_id'])
-reader = BarcodeReader(barcode_sync_config['barcode_device'])
-BarcodeSync(CascadingBarcodeDecoder(), reader, wl, async=False)
-```
-
-### Wunderlist export to the Bring App: ###
-```
-from config import *
-wl = WuList(wunderlist_client_id, wunderlist_token, bring_sync_config["export_list_id"])
-BringSync(Bring(bring_sync_config), wl)
-```
-
-### Wunderlist sync with a Kaufland or AllYouNeed shopping cart: ###
-
-```
-from config import *
-wl = WuList(wunderlist_client_id, wunderlist_token, shopping_wunderlist_list_id)
-```
+### Choose a grocery store: Kaufland or AllYouNeed: ###
 
 1. You can chose a shop implementation. Some shops need a Captcha solving service account.
 
@@ -87,9 +68,9 @@ ayn = AllYouNeed(all_you_need_email, all_you_need_password)
      In that case wunderlist is calling this app in case of list changes.
 
 ```
-ShopSync(kl, wl, async=False)
+ShopSync(kl, config, async=False)
 # or 
-ShopSync(kl, wl,
+ShopSync(kl, config,
          web_hook_url=web_hook_url,
          web_server_ip=web_server_ip,
          web_server_port=web_server_port,

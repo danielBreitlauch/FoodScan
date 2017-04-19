@@ -4,13 +4,16 @@ from thread import start_new_thread
 from pysimplelog import Logger
 import traceback
 
+from FoodScan import WuList
+from FoodScan.BarcodeSync import BarcodeReader
+
 
 class BarcodeSync:
-    def __init__(self, barcode_descriptor, barcode_reader, wu_list, async=True):
+    def __init__(self, barcode_descriptor, config, async=True):
         self.logger = Logger('BarcodeSync')
         self.barcode_descriptor = barcode_descriptor
-        self.barcode_reader = barcode_reader
-        self.wu_list = wu_list
+        self.barcode_reader = BarcodeReader(config['barcode_device'])
+        self.wu_list = WuList(config)
         self.file_name = "barcode.db"
         self.matches = self.load()
         if async:

@@ -8,10 +8,10 @@ requests.packages.urllib3.util.ssl_.DEFAULT_CIPHERS = 'ECDH+AESGCM:DH+AESGCM:ECD
 
 
 class WuList:
-    def __init__(self, client_id, token, list_id):
+    def __init__(self, config):
         self.logger = Logger('Wunderlist')
-        self.client = wunderpy2.WunderApi().get_client(token, client_id)
-        self.list_id = list_id
+        self.client = wunderpy2.WunderApi().get_client(config['wunderlist_token'], config['wunderlist_client_id'])
+        self.list_id = config['wunderlist_list_id']
 
     def create_web_hook(self, url, port):
         hooks = self.client.get_webhooks(self.list_id)

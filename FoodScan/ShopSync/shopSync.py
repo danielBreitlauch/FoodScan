@@ -7,15 +7,16 @@ from pysimplelog import Logger
 from werkzeug.wrappers import Request, Response
 from werkzeug.serving import run_simple
 
+from FoodScan import WuList
 from FoodScan.ShopSync.metaShop import MetaShop, MetaShopItem
 
 
 class ShopSync:
-    def __init__(self, shop, wu_list, web_hook_url=None, web_server_ip=None, web_server_port=8080, async=True):
+    def __init__(self, shop, config, web_hook_url=None, web_server_ip=None, web_server_port=8080, async=True):
         self.logger = Logger('ShopSync')
         self.shop = shop
-        self.wu_list = wu_list
-        self.meta = MetaShop(self, wu_list)
+        self.wu_list = WuList(config)
+        self.meta = MetaShop(self, self.wu_list)
         self.shop_list_rev = 0
         self.shop_task_revs = {}
         self.shop_items = {}
