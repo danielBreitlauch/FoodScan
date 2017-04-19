@@ -1,5 +1,0 @@
-whole cart data list
-    total price
-    delivery date
-
-checkout
