@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+from pysimplelog import Logger
+
 from FoodScan.items import ListItem, SubItem
 
 
@@ -25,22 +27,20 @@ class MetaShop:
         return True
 
     def sync(self):
-        for sub_task in self.wu_list.client.get_task_subtasks(self.iid):
+        for sub_task in self.wu_list.task_sub_tasks():
             for action in self.item.actions:
                 if sub_task['title'] == action.title():
                     if sub_task['completed']:
                         for a in self.item.actions:
                             a.notes = None
                         action.action(self)
+                        self.revision = self.wu_list.update_item({'id': self.iid}, self.item, rebuild_notes=True)
                     break
 
     def set_price(self, price):
         if price != self.item.price:
             self.item.price = price
             self.revision = self.wu_list.update_item({'id': self.iid, 'title': ""}, self.item)
-
-    def update(self):
-        self.revision = self.wu_list.update_item({'id': self.iid}, self.item, rebuild_subs=True, rebuild_notes=True)
 
 
 class MetaShopItem(ListItem):
@@ -81,6 +81,7 @@ class CheckCartAction(SubItem):
 
     def __init__(self):
         SubItem.__init__(self)
+        self.logger = Logger('CheckCartAction')
         self.notes = None
 
     # noinspection SpellCheckingInspection
@@ -91,9 +92,50 @@ class CheckCartAction(SubItem):
         return False
 
     def action(self, meta_shop):
-        self.notes = meta_shop.shop_sync.detect_cart_list_differences()
-        meta_shop.update()
-        # meta_shop.revision = meta_shop.wu_list.update_item({'id': meta_shop.iid}, meta_shop.item, rebuild_notes=True)
+        cart_items = meta_shop.shop_sync.shop.cart()
+        tasks = meta_shop.wu_list.list_items()
+        shop_items = []
+
+        msg0 = ""
+        msg1 = ""
+        for task in tasks:
+            if MetaShopItem.is_meta_item(task):
+                continue
+
+            item = meta_shop.wu_list.item_from_task(task)
+            shop_item = item.selected_shop_item()
+            if shop_item:
+                shop_items.append(shop_item)
+                if shop_item in cart_items:
+                    for c in cart_items:
+                        if c.name == shop_item.name:
+                            if shop_item.amount != c.amount:
+                                self.logger.warn(
+                                    "Task item and shop item amounts differ: " + shop_item.name.encode('utf-8'))
+                                msg0 += shop_item.name.encode('utf-8') + ": " + str(shop_item.amount) + " vs. " + str(
+                                    c.amount) + "\n"
+                            break
+                else:
+                    self.logger.warn("Task item without shop item: " + shop_item.name.encode('utf-8'))
+                    msg1 += " - " + shop_item.name.encode('utf-8') + "\n"
+
+        msg2 = ""
+        for cart_item in cart_items:
+            if cart_item not in shop_items:
+                self.logger.warn("Cart item without task: " + cart_item.name.encode('utf-8'))
+                msg2 += " + " + cart_item.name.encode('utf-8') + "\n"
+
+        msg = ""
+        if msg0:
+            msg += "Mengenunterschiede: Liste vs. Einkaufswagen\n" + msg0
+
+        if msg1:
+            msg += "\nNicht im Einkaufswagen gefunden:\n" + msg1
+
+        if msg2:
+            msg += "\nNicht auf der Liste gefunden:\n" + msg2
+
+        self.notes = msg
 
     def note(self):
         return self.notes

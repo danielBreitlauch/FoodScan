@@ -58,7 +58,7 @@ class ShopSync:
                 traceback.print_exc()
 
     def sync_shop_list(self):
-        if self.shop_list_rev == self.wu_list.client.get_list(self.wu_list.list_id)['revision']:
+        if self.shop_list_rev == self.wu_list.list_revision():
             return False
 
         new, changed, deleted_ids, meta_changed = self.detect_changed_tasks()
@@ -87,8 +87,8 @@ class ShopSync:
         self.meta.set_price(price)
 
     def detect_changed_tasks(self):
-        self.shop_list_rev = self.wu_list.client.get_list(self.wu_list.list_id)['revision']
-        new_tasks = self.wu_list.client.get_tasks(self.wu_list.list_id)
+        self.shop_list_rev = self.wu_list.list_revision()
+        new_tasks = self.wu_list.list_items()
 
         meta_changed = self.meta.detect_changes(new_tasks)
 
@@ -150,7 +150,7 @@ class ShopSync:
     def update_item(self, task):
         self.logger.info("Update - " + task['title'].encode('utf-8'))
         iid = task['id']
-        item = self.wu_list.item_from_task(task, unmark=True)
+        item = self.wu_list.item_from_task(task)
         existing = self.shop_items[iid]
 
         if item != existing:
@@ -175,50 +175,6 @@ class ShopSync:
             if update:
                 self.choice.remember_choice(existing)
                 self.shop_task_revs[iid] = self.wu_list.update_item(task, existing)
-
-    def detect_cart_list_differences(self):
-        cart_items = self.shop.cart()
-        tasks = self.wu_list.client.get_tasks(self.wu_list.list_id)
-        shop_items = []
-
-        msg0 = ""
-        msg1 = ""
-        for task in tasks:
-            if MetaShopItem.is_meta_item(task):
-                continue
-
-            item = self.wu_list.item_from_task(task)
-            shop_item = item.selected_shop_item()
-            if shop_item:
-                shop_items.append(shop_item)
-                if shop_item in cart_items:
-                    for c in cart_items:
-                        if c.name == shop_item.name:
-                            if shop_item.amount != c.amount:
-                                self.logger.warn("Task item and shop item amounts differ: " + shop_item.name.encode('utf-8'))
-                                msg0 += shop_item.name.encode('utf-8') + ": " + str(shop_item.amount) + " vs. " + str(c.amount) + "\n"
-                            break
-                else:
-                    self.logger.warn("Task item without shop item: " + shop_item.name.encode('utf-8'))
-                    msg1 += " - " + shop_item.name.encode('utf-8') + "\n"
-
-        msg2 = ""
-        for cart_item in cart_items:
-            if cart_item not in shop_items:
-                self.logger.warn("Cart item without task: " + cart_item.name.encode('utf-8'))
-                msg2 += " + " + cart_item.name.encode('utf-8') + "\n"
-
-        msg = ""
-        if msg0:
-            msg += "Mengenunterschiede: Liste vs. Einkaufswagen\n" + msg0
-
-        if msg1:
-            msg += "\nNicht im Einkaufswagen gefunden:\n" + msg1
-
-        if msg2:
-            msg += "\nNicht auf der Liste gefunden:\n" + msg2
-
-        return msg
 
 
 class Choice:

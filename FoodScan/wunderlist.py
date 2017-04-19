@@ -20,16 +20,21 @@ class WuList:
 
         self.client.create_webhook(self.list_id, url + ":" + str(port), "generic")
 
-    def item_from_task(self, task, with_selects=True, unmark=False, split=True):
+    def list_items(self):
+        return self.client.get_tasks(self.list_id)
+
+    def list_revision(self):
+        return self.client.get_list(self.list_id)['revision']
+
+    def task_sub_tasks(self, iid):
+        return self.client.get_task_subtasks(iid)
+
+    def item_from_task(self, task, with_selects=True):
         notes = self.client.get_task_notes(task['id'])
         notes = notes[0]['content'] if len(notes) > 0 else u""
 
         sub_tasks = self.client.get_task_subtasks(task['id']) if with_selects else []
-
-        item = Item.parse(task['title'], notes, sub_tasks)
-        #if split:
-        #    self.split_items(item, task['id'], sub_tasks, unmark)
-        return item
+        return Item.parse(task['title'], notes, sub_tasks)
 
     def create_item(self, item):
         task = self.client.create_task(self.list_id, title=item.title())
@@ -53,6 +58,12 @@ class WuList:
 
             for sub_item in item.sub_items():
                 self.client.create_subtask(iid, sub_item.title(), completed=sub_item.selected())
+        else:
+            for sub in self.client.get_task_subtasks(iid):
+                for sub_item in item.sub_items():
+                    if sub_item.title() == sub['title']:
+                        self.client.update_subtask(sub['id'], sub['revision'], completed=sub_item.selected())
+                        break
 
         if rebuild_notes:
             notes = self.client.get_task_notes(iid)
@@ -78,6 +89,15 @@ class WuList:
             return self.client.get_task(iid)['revision']
         else:
             return task['revision']
+
+    def delete_item(self, task):
+        while True:
+            try:
+                new_revision = self.client.get_task(task['id'])['revision']
+                self.client.delete_task(task['id'], new_revision)
+                return
+            except ValueError:
+                pass
 
     def task_position(self, iid, position):
         pos = self.client.get_task_positions_objs(self.list_id)[0]
