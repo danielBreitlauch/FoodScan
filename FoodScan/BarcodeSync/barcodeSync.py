@@ -6,6 +6,7 @@ import traceback
 
 from FoodScan import WuList
 from FoodScan.BarcodeSync import BarcodeReader
+from FoodScan.ShopSync.metaShop import MetaShopItem
 
 
 class BarcodeSync:
@@ -61,6 +62,9 @@ class BarcodeSync:
         tasks = self.wu_list.list_items()
 
         for task in tasks:
+            if MetaShopItem.is_meta_item(task):
+                continue
+
             if item.name.lower() in task['title'].lower():
                 existing = self.wu_list.item_from_task(task, with_selects=False)
                 existing.inc_amount()
@@ -68,6 +72,9 @@ class BarcodeSync:
                 return
 
         for task in tasks:
+            if MetaShopItem.is_meta_item(task):
+                continue
+
             existing = self.wu_list.item_from_task(task)
             if existing.synced() and item.name.lower() in existing.selected_shop_item().name.lower():
                 existing.inc_amount()
