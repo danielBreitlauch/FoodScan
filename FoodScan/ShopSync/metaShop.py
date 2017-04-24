@@ -27,7 +27,7 @@ class MetaShop:
         return True
 
     def sync(self):
-        for sub_task in self.wu_list.task_sub_tasks():
+        for sub_task in self.wu_list.task_sub_tasks(self.iid):
             for action in self.item.actions:
                 if sub_task['title'] == action.title():
                     if sub_task['completed']:
