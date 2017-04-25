@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import pickle
 from thread import start_new_thread
+from threading import Timer
 from time import sleep
 import traceback
 from pysimplelog import Logger
@@ -41,7 +42,10 @@ class ShopSync:
 
     @Request.application
     def hook(self, _):
-        self.sync_shop_list()
+        try:
+            self.sync_shop_list()
+        except:
+            Timer(10 * 60.0, self.hook, args=[_]).start()  # 10 Minutes
         return Response()
 
     def listen(self):
