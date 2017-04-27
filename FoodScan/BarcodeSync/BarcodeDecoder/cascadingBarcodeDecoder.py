@@ -1,3 +1,5 @@
+import traceback
+
 from FoodScan.BarcodeSync.BarcodeDecoder.barcodeDecoder import BarcodeDecoder
 from FoodScan.BarcodeSync.BarcodeDecoder.codecheck import CodeCheck
 from FoodScan.BarcodeSync.BarcodeDecoder.digitEye import DigitEye
@@ -18,13 +20,20 @@ class CascadingBarcodeDecoder(BarcodeDecoder):
     def url(barcode):
         return CodeCheck.url(barcode)
 
+    def wrap(self, method, barcode):
+        try:
+            return method.item(barcode)
+        except Exception:
+            traceback.print_exc()
+            return None
+
     def item(self, barcode):
-        item = self.cc.item(barcode)
+        item = self.wrap(self.cc, barcode)
         if not item:
-            item = self.gh.item(barcode)
+            item = self.wrap(self.gh, barcode)
         if not item:
-            item = self.de.item(barcode)
+            item = self.wrap(self.de, barcode)
         if not item:
-            item = self.es.item(barcode)
+            item = self.wrap(self.es, barcode)
 
         return item
