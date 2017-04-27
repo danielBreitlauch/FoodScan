@@ -39,6 +39,7 @@ class BarcodeSync:
 
     def match(self, barcode):
         if barcode in self.matches:
+            self.logger.info("Use old match for: " + barcode)
             return self.matches[barcode]
         else:
             return None
@@ -47,6 +48,7 @@ class BarcodeSync:
         while True:
             try:
                 barcode = self.barcode_reader.q.get()
+                self.logger.info("Work on: " + barcode)
                 item = self.match(barcode)
                 if not item:
                     item = self.barcode_descriptor.item(barcode)
