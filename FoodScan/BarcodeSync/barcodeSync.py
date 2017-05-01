@@ -57,6 +57,9 @@ class BarcodeSync:
                 if item:
                     self.logger.info("Detected: " + item.name.encode('utf-8'))
                     self.add_barcode(item)
+                else:
+                    self.logger.info("Could not id: " + barcode)
+
             except Exception:
                 traceback.print_exc()
 
