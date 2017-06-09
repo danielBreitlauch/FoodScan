@@ -42,10 +42,14 @@ class ShopSync:
 
     @Request.application
     def hook(self, _):
+        self.timed_sync()
+        return Response()
+
+    def timed_sync(self):
         try:
             self.sync_shop_list()
         except:
-            Timer(10 * 60.0, self.hook, args=[_]).start()  # 10 Minutes
+            Timer(10 * 60.0, self.timed_sync).start()  # 10 Minutes
         return Response()
 
     def listen(self):
