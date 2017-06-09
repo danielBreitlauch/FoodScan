@@ -50,7 +50,7 @@ class MetaShopItem(ListItem):
     def __init__(self, price=0):
         ListItem.__init__(self)
         self.price = price
-        self.actions = [CheckCartAction()]
+        self.actions = [CheckCartAction(), ClearAction()]
 
     def sub_items(self):
         return self.actions
@@ -139,6 +139,34 @@ class CheckCartAction(SubItem):
 
     def note(self):
         return self.notes
+
+    @classmethod
+    def parse(cls, string):
+        pass
+
+
+class ClearAction(SubItem):
+
+    def __init__(self):
+        SubItem.__init__(self)
+        self.logger = Logger('ClearAction')
+
+    # noinspection SpellCheckingInspection
+    def title(self):
+        return "Liste löschen"
+
+    def selected(self):
+        return False
+
+    def action(self, meta_shop):
+        tasks = meta_shop.wu_list.list_items()
+
+        for task in tasks:
+            if not MetaShopItem.is_meta_item(task):
+                meta_shop.wu_list.delete_item(task)
+
+    def note(self):
+        return None
 
     @classmethod
     def parse(cls, string):
