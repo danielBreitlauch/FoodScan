@@ -13,6 +13,7 @@ from requests import Session
 
 from FoodScan.ShopSync.Shops.shop import Shop
 from FoodScan.items import ShopItem
+from selenium import webdriver
 
 
 class Kaufland(Shop):
@@ -28,6 +29,10 @@ class Kaufland(Shop):
         self.take_url = 'https://shop.kaufland.de/cart/modify'
         self.basket_url = 'https://shop.kaufland.de/cart'
 
+        self.driver = webdriver.PhantomJS(executable_path='/usr/local/bin/phantomjs')
+        # self.driver = webdriver.Chrome('./chromedriver')
+        self.driver.set_window_size(1280, 1024)
+
         Shop.__init__(self, email, password, cookie_file)
 
     @staticmethod
@@ -37,24 +42,16 @@ class Kaufland(Shop):
     def login(self):
         self.logger.info("Logging in...")
         self.session = Session()
-        html = self.session.get(self.account_url).text
-        blob = BeautifulSoup(html, "html.parser")
-        token = blob.find('input', {'name': 'CSRFToken'}).get('value')
-        site_key = blob.find('input', {'id': 'siteKey'}).get('value')
 
-        job = self.captcha_service.create(self.login_url, site_key)
-        time.sleep(5)
+        self.driver.get(self.account_url)
+        time.sleep(2)
 
-        data = [
-            ('j_username', self.email),
-            ('j_password', self.password),
-            ('g-recaptcha-response', self.captcha_service.result(job)),
-            ('siteKeyCaptcha', site_key),
-            ('submit-form', ''),
-            ('CSRFToken', token),
-        ]
-
-        self.session.post(self.base_url + '/j_spring_security_check', data=data)
+        x = self.driver.find_element_by_id('kLoginForm')
+        x.find_element_by_id('j_username').send_keys(self.email)
+        x.find_element_by_id('j_password').send_keys(self.password)
+        x.find_element_by_tag_name('button').click()
+        time.sleep(3)
+        self.new_session_with_cookies(self.driver.get_cookies())
         self.save_session()
 
     def is_logged_in(self, html=None):
