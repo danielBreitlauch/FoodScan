@@ -50,7 +50,7 @@ class MetaShopItem(ListItem):
     def __init__(self, price=0):
         ListItem.__init__(self)
         self.price = price
-        self.actions = [CheckCartAction(), ClearAction()]
+        self.actions = [ClearAction(), CheckCartAction()]
 
     def sub_items(self):
         return self.actions
@@ -153,7 +153,7 @@ class ClearAction(SubItem):
 
     # noinspection SpellCheckingInspection
     def title(self):
-        return "Liste löschen"
+        return "Liste leeren"
 
     def selected(self):
         return False
