@@ -15,7 +15,7 @@ class MetaShop:
 
     def detect_changes(self, new_tasks):
         for new_task in new_tasks:
-            if MetaShopItem.is_meta_item(new_task):
+            if self.wu_list.is_meta_item(new_task):
                 if self.iid != new_task['id'] or self.revision != new_task['revision']:
                     self.iid = new_task['id']
                     self.revision = new_task['revision']
@@ -93,16 +93,11 @@ class CheckCartAction(SubItem):
 
     def action(self, meta_shop):
         cart_items = meta_shop.shop_sync.shop.cart()
-        tasks = meta_shop.wu_list.list_items()
         shop_items = []
 
         msg0 = ""
         msg1 = ""
-        for task in tasks:
-            if MetaShopItem.is_meta_item(task):
-                continue
-
-            item = meta_shop.wu_list.item_from_task(task)
+        for task, item in meta_shop.wu_list.list_items():
             shop_item = item.selected_shop_item()
             if shop_item:
                 shop_items.append(shop_item)
@@ -159,11 +154,8 @@ class ClearAction(SubItem):
         return False
 
     def action(self, meta_shop):
-        tasks = meta_shop.wu_list.list_items()
-
-        for task in tasks:
-            if not MetaShopItem.is_meta_item(task):
-                meta_shop.wu_list.delete_item(task)
+        for task, item in meta_shop.wu_list.list_items():
+            meta_shop.wu_list.delete_item(task)
 
     def note(self):
         return None

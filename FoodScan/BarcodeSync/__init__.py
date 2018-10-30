@@ -1,3 +1,3 @@
 from .BarcodeDecoder import *
-from barcodereader import BarcodeReader
+from barcodeReader import BarcodeReader
 from barcodeSync import BarcodeSync

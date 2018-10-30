@@ -8,15 +8,14 @@ from pysimplelog import Logger
 from werkzeug.wrappers import Request, Response
 from werkzeug.serving import run_simple
 
-from FoodScan import WuList
-from FoodScan.ShopSync.metaShop import MetaShop, MetaShopItem
+from FoodScan.ShopSync.metaShop import MetaShop
 
 
 class ShopSync:
-    def __init__(self, shop, config, web_hook_url=None, web_server_ip=None, web_server_port=8080, async=True):
+    def __init__(self, shop, shop_list, web_hook_url=None, web_server_ip=None, web_server_port=8080, async=True):
         self.logger = Logger('ShopSync')
         self.shop = shop
-        self.wu_list = WuList(config)
+        self.wu_list = shop_list
         self.meta = MetaShop(self, self.wu_list)
         self.shop_list_rev = 0
         self.shop_task_revs = {}
@@ -97,14 +96,14 @@ class ShopSync:
 
     def detect_changed_tasks(self):
         self.shop_list_rev = self.wu_list.list_revision()
-        new_tasks = self.wu_list.list_items()
+        new_tasks = self.wu_list.list_tasks()
 
         meta_changed = self.meta.detect_changes(new_tasks)
 
         changed = []
         new = []
         for new_task in new_tasks:
-            if MetaShopItem.is_meta_item(new_task):
+            if self.wu_list.is_meta_item(new_task):
                 continue
             iid = new_task['id']
             revision = new_task['revision']

@@ -4,17 +4,15 @@ from thread import start_new_thread
 from pysimplelog import Logger
 import traceback
 
-from FoodScan import WuList
 from FoodScan.BarcodeSync import BarcodeReader
-from FoodScan.ShopSync.metaShop import MetaShopItem
 
 
 class BarcodeSync:
-    def __init__(self, barcode_descriptor, config, async=True):
+    def __init__(self, barcode_descriptor, config, shopList, async=True):
         self.logger = Logger('BarcodeSync')
         self.barcode_descriptor = barcode_descriptor
         self.barcode_reader = BarcodeReader(config['barcode_device'])
-        self.wu_list = WuList(config)
+        self.shop_list = shopList
         self.file_name = "barcode.db"
         self.matches = self.load()
         if async:
@@ -64,26 +62,10 @@ class BarcodeSync:
                 traceback.print_exc()
 
     def add_barcode(self, item):
-        tasks = self.wu_list.list_items()
-
-        for task in tasks:
-            if MetaShopItem.is_meta_item(task):
-                continue
-
-            if item.name.lower() in task['title'].lower():
-                existing = self.wu_list.item_from_task(task, with_selects=False)
-                existing.inc_amount()
-                self.wu_list.update_item(task, existing)
-                return
-
-        for task in tasks:
-            if MetaShopItem.is_meta_item(task):
-                continue
-
-            existing = self.wu_list.item_from_task(task)
+        for task, existing in self.shop_list.list_items():
             if existing.synced() and item.name.lower() in existing.selected_shop_item().name.lower():
                 existing.inc_amount()
-                self.wu_list.update_item(task, existing)
+                self.shop_list.update_item(task, existing)
                 return
 
-        self.wu_list.create_item(item)
+        self.shop_list.create_item(item)

@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+from FoodScan.ShopList import ShopList
+from FoodScan.ShopSync.metaShop import MetaShopItem
 from FoodScan.items import *
 import wunderpy2
 from pysimplelog import Logger
@@ -7,11 +9,16 @@ import requests
 requests.packages.urllib3.util.ssl_.DEFAULT_CIPHERS = 'ECDH+AESGCM:DH+AESGCM:ECDH+AES256:DH+AES256:ECDH+AES128:DH+AES:ECDH+3DES:DH+3DES:RSA+AESGCM:RSA+AES:RSA+3DES:!aNULL:!MD5:!DSS'
 
 
-class WuList:
+class WuList(ShopList):
+
     def __init__(self, config):
+        ShopList.__init__(self)
         self.logger = Logger('Wunderlist')
         self.client = wunderpy2.WunderApi().get_client(config['wunderlist_token'], config['wunderlist_client_id'])
         self.list_id = config['wunderlist_list_id']
+
+    def is_meta_item(self, task):
+        return MetaShopItem.is_meta_item(task)
 
     def create_web_hook(self, url, port):
         hooks = self.client.get_webhooks(self.list_id)
@@ -20,7 +27,7 @@ class WuList:
 
         self.client.create_webhook(self.list_id, url + ":" + str(port), "generic")
 
-    def list_items(self):
+    def list_tasks(self):
         return self.client.get_tasks(self.list_id)
 
     def list_revision(self):
@@ -112,33 +119,3 @@ class WuList:
                     position += 1
                 v.insert(position, iid)
             self.client.update_task_positions_obj(pos['id'], pos['revision'], v)
-
-    def split_items(self, item, iid, sub_tasks, unmark):
-        task = self.client.get_task(iid)
-        if task['completed']:
-            self.logger.info("task got completed before split: " + item.name.encode('utf-8'))
-            return
-
-        selected_shop_items = [shop_item for shop_item in item.shop_items if shop_item.selected()]
-
-        if 0 < len(selected_shop_items) < len(item.shop_items):
-            if len(selected_shop_items) > 1:
-                completed = True
-                for t in sub_tasks:
-                    completed = completed and t['completed']
-                if completed:
-                    self.logger.info("all subtasks completed before split: " + item.name.encode('utf-8'))
-                    return
-
-                while len(selected_shop_items) > 1:
-                    shop_item = selected_shop_items.pop()
-                    self.logger.info("splitting of: " + shop_item.name.encode('utf-8'))
-                    new_item = Item(name=shop_item.name, price=shop_item.price, url=shop_item.link)
-                    new_item.select_shop_item(shop_item)
-                    self.create_item(new_item)
-                    shop_item.select = False
-                    if unmark:
-                        for sub in sub_tasks:
-                            if shop_item == ShopItem.parse(sub['title']):
-                                self.client.update_subtask(sub['id'], sub['revision'], completed=False)
-            item.select_shop_item(selected_shop_items.pop())
