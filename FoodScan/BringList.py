@@ -1,7 +1,7 @@
 from requests import *
 
 from FoodScan.ShopList import ShopList, Item
-from FoodScan.items import is_int
+from FoodScan.items import is_int, ShopItem
 
 
 class BringList(ShopList):
@@ -37,7 +37,10 @@ class BringList(ShopList):
             amount = int(task['specification'])
         else:
             amount = 1
-        return Item(name=task['name'], amount=amount)
+
+        item = Item(name=task['name'], amount=amount)
+        item.select_shop_item(ShopItem(None, amount, task['name'], None, None, True))
+        return item
 
     def create_item(self, item):
         headers = self.auth_headers.copy()
@@ -81,3 +84,4 @@ class BringList(ShopList):
 
     def user_settings(self):
         return get(self.bringRestURL + "bringusersettings/" + self.bringUUID, headers=self.auth_headers).json()
+
