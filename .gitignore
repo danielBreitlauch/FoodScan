@@ -6,3 +6,5 @@ ghostdriver*
 simplelog.log
 *.pyc
 /choices-*.db
+barcode.db
+start.sh
