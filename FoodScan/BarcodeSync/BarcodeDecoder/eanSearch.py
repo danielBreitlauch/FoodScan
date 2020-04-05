@@ -27,8 +27,10 @@ class EanSearch(BarcodeDecoder):
                 return None
 
             name = blob.find('a', {'href': "/perl/ean-info.pl?ean=" + barcode})
-            return Item(name=name.text,
-                        url=url)
+            if name:
+                return Item(name=name.text, url=url)
+            else:
+                return None
         except Exception, e:
             self.logger.warn("Exception while searching for " + barcode + "\n" + str(e))
             return None

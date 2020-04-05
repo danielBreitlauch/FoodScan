@@ -31,7 +31,10 @@ class DigitEye(BarcodeDecoder):
                 return None
 
             name = blob.find('h2', {'id': "description"}).text
-            ingredients = blob.find('td', {'id': "ingredients"}).text
+
+            ingredients = ""
+            if blob.find('td', {'id': "ingredients"}):
+                ingredients = blob.find('td', {'id': "ingredients"}).text
 
             return Item(name=name,
                         url=url,

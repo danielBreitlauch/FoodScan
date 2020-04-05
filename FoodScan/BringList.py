@@ -46,6 +46,7 @@ class BringList(ShopList):
         headers = self.auth_headers.copy()
         headers['Content-Type'] = 'application/x-www-form-urlencoded; charset=UTF-8'
         put(self.bringRestURL + "bringlists/" + self.bringListUUID, params={'purchase': item.name, 'specification': str(item.amount)}, headers=headers)
+        self.logger.info("Created: " + item.name)
 
     def update_item(self, task, item, rebuild_notes=False, rebuild_subs=False):
         self.create_item(item)
