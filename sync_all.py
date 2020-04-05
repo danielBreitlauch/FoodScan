@@ -19,4 +19,4 @@ ShopSync(kl, WuList(shop_sync_config),
          web_hook_url=web_hook_url,
          web_server_ip=web_server_ip,
          web_server_port=web_server_port,
-         async=False)
+         asynchron=False)

@@ -10,11 +10,11 @@ kl = Kaufland(kaufland_email, kaufland_password, AntiCaptcha(anti_captcha_key))
 
 # Syncer:
 #  Polling wunderlist for changes
-# ShopSync(kl, shop_sync_config, async=False)
+# ShopSync(kl, shop_sync_config, asynchron=False)
 
 #  Webhook that wunderlist can call when the list changes
 ShopSync(kl, WuList(shop_sync_config),
          web_hook_url=web_hook_url,
          web_server_ip=web_server_ip,
          web_server_port=web_server_port,
-         async=False)
+         asynchron=False)

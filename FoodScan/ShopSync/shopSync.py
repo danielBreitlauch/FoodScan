@@ -12,7 +12,7 @@ from FoodScan.ShopSync.metaShop import MetaShop
 
 
 class ShopSync:
-    def __init__(self, shop, shop_list, web_hook_url=None, web_server_ip=None, web_server_port=8080, async=True):
+    def __init__(self, shop, shop_list, web_hook_url=None, web_server_ip=None, web_server_port=8080, asynchron=True):
         self.logger = Logger('ShopSync')
         self.shop = shop
         self.wu_list = shop_list
@@ -28,7 +28,7 @@ class ShopSync:
             function = self.start_hook
         else:
             function = self.listen
-        if async:
+        if asynchron:
             start_new_thread(function, ())
         else:
             function()

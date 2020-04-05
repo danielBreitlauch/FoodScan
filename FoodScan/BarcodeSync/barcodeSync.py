@@ -8,14 +8,14 @@ from FoodScan.BarcodeSync import BarcodeReader
 
 
 class BarcodeSync:
-    def __init__(self, barcode_descriptor, config, shopList, async=True):
+    def __init__(self, barcode_descriptor, config, shopList, asynchron=True):
         self.logger = Logger('BarcodeSync')
         self.barcode_descriptor = barcode_descriptor
         self.barcode_reader = BarcodeReader(config['barcode_device'])
         self.shop_list = shopList
         self.file_name = "barcode.db"
         self.matches = self.load()
-        if async:
+        if asynchron:
             start_new_thread(self.listen, ())
         else:
             self.listen()

@@ -7,4 +7,4 @@ from config import *
 # shopList = WuList(barcode_sync_config)
 shopList = BringList(bring_config)
 
-BarcodeSync(CascadingBarcodeDecoder(), barcode_config, shopList, async=False)
+BarcodeSync(CascadingBarcodeDecoder(), barcode_config, shopList, asynchron=False)
