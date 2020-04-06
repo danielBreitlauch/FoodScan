@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import pickle
-from thread import start_new_thread
+from _thread import start_new_thread
 from threading import Timer
 from time import sleep
 import traceback
@@ -87,7 +87,7 @@ class ShopSync:
         return len(new) + len(changed) + len(deleted_ids) > 0 or meta_changed
 
     def update_meta(self):
-        shop_items = [item.selected_shop_item() for item in self.shop_items.values() if item.synced()]
+        shop_items = [item.selected_shop_item() for item in list(self.shop_items.values()) if item.synced()]
         price = 0
         for s in shop_items:
             price += s.amount * s.price

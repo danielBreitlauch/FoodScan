@@ -38,7 +38,7 @@ class WuList(ShopList):
 
     def item_from_task(self, task, with_selects=True):
         notes = self.client.get_task_notes(task['id'])
-        notes = notes[0]['content'] if len(notes) > 0 else u""
+        notes = notes[0]['content'] if len(notes) > 0 else ""
 
         sub_tasks = self.client.get_task_subtasks(task['id']) if with_selects else []
         return Item.parse(task['title'], notes, sub_tasks)

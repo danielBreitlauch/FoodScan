@@ -2,9 +2,9 @@
 
 import pickle
 import time
-import urlparse
+import urllib.parse
 from datetime import datetime
-from urllib2 import quote
+from urllib.parse import quote
 
 from bs4 import BeautifulSoup
 from pysimplelog import Logger
@@ -117,7 +117,7 @@ class AllYouNeed(Shop):
             article_id = article_col[i]
             amount = int(amount_col[i].text.replace('x', '').strip())
             item = name_col[i]
-            link = urlparse.urljoin(self.base_url, item.find('a')['href'])
+            link = urllib.parse.urljoin(self.base_url, item.find('a')['href'])
             price = extract_price(price_col[i])
 
             item.span.clear()
@@ -134,7 +134,7 @@ class AllYouNeed(Shop):
         perfect = []
         for i in r:
             link = i.find('a', class_='article-link')['href']
-            link = urlparse.urljoin(self.base_url, link)
+            link = urllib.parse.urljoin(self.base_url, link)
             price = extract_price(i.find('span', class_='product-price'))
 
             desc = i.find('div', class_='product-description')

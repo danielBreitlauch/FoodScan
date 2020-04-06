@@ -3,9 +3,9 @@
 import unicodedata
 import pickle
 import time
-import urlparse
+import urllib.parse
 import re
-from urllib2 import quote
+from urllib.parse import quote
 
 from bs4 import BeautifulSoup
 from pysimplelog import Logger
@@ -98,7 +98,7 @@ class Kaufland(Shop):
         ids = []
         for i in r.findAll('article'):
             a = i.find('a')
-            link = urlparse.urljoin(self.base_url, a['href'])
+            link = urllib.parse.urljoin(self.base_url, a['href'])
             title = i.find('p', {'class': 'product-list__title'}).text.strip()
             amount = i.find('div', {'class': 'product-list__amount'})
             article_id = amount['data-dynamicblock']
@@ -107,7 +107,7 @@ class Kaufland(Shop):
             red = price.find('span', {'class': 'product-list__reduced-price'})
             if red:
                 price = red
-            price = price.text.replace(u'€', u'').strip()
+            price = price.text.replace('€', '').strip()
             price = int(float(price) * 100)
 
             title = unicodedata.normalize('NFKC', title)
@@ -146,12 +146,12 @@ class Kaufland(Shop):
             for i in r.findAll('article'):
                 a = i.find('a')
                 article_id = i['data-dynamicblock'].split('_')[0]
-                link = urlparse.urljoin(self.base_url, a['href'])
+                link = urllib.parse.urljoin(self.base_url, a['href'])
                 title = a.find('p', {'class': 'product-tile__infos--title'}).text.strip()
                 price = a.find('div', {'class': 'product-tile__price--regular'})
                 if not price:
                     price = a.find('div', {'class': 'product-tile__price--reduced'})
-                price = price.text.replace(u'€', u'').strip()
+                price = price.text.replace('€', '').strip()
                 price = int(float(price) * 100)
 
                 title = unicodedata.normalize('NFKC', title)

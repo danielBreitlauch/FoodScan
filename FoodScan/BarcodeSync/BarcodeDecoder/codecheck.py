@@ -1,4 +1,4 @@
-from urllib2 import quote
+from urllib.parse import quote
 
 from bs4 import BeautifulSoup
 from pysimplelog import Logger
@@ -35,7 +35,7 @@ class CodeCheck(BarcodeDecoder):
                         ingredients=self.parse_ingredients(blob),
                         ratings=ratings,
                         num_rating=numeric)
-        except Exception, e:
+        except Exception as e:
             self.logger.warn("Exception while searching for " + barcode + "\n" + str(e))
             return None
 

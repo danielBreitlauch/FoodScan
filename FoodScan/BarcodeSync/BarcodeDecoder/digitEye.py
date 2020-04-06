@@ -1,4 +1,4 @@
-from urllib2 import quote
+from urllib.parse import quote
 
 from bs4 import BeautifulSoup
 from pysimplelog import Logger
@@ -39,6 +39,6 @@ class DigitEye(BarcodeDecoder):
             return Item(name=name,
                         url=url,
                         ingredients=ingredients)
-        except Exception, e:
+        except Exception as e:
             self.logger.warn("Exception while searching for " + barcode + "\n" + str(e))
             return None

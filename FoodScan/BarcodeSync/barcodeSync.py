@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import pickle
-from thread import start_new_thread
+from _thread import start_new_thread
 from pysimplelog import Logger
 import traceback
 

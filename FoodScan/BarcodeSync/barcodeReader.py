@@ -1,17 +1,18 @@
 import select
 import struct
 import traceback
+
 from pysimplelog import Logger
-import Queue
-from thread import start_new_thread
+import queue
+from _thread import start_new_thread
 
 
 class BarcodeReader:
 
     def __init__(self, device):
         self.logger = Logger('Barcode scan')
-        self.file = open(device, 'rb')
-        self.q = Queue.Queue()
+#        self.file = open(device, 'rb')
+        self.q = queue.Queue()
         start_new_thread(self.scan, ())
 
     def scan(self):

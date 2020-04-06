@@ -1,4 +1,4 @@
-from urllib2 import quote
+from urllib.parse import quote
 
 from bs4 import BeautifulSoup
 from pysimplelog import Logger
@@ -31,6 +31,6 @@ class EanSearch(BarcodeDecoder):
                 return Item(name=name.text, url=url)
             else:
                 return None
-        except Exception, e:
+        except Exception as e:
             self.logger.warn("Exception while searching for " + barcode + "\n" + str(e))
             return None

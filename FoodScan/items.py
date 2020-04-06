@@ -57,7 +57,7 @@ class ShopItem(SubItem):
         self.select = select
 
     def title(self):
-        return str(self.price / 100.0) + u'€ ' + self.name + u' (' + self.link + u')'
+        return str(self.price / 100.0) + '€ ' + self.name + ' (' + self.link + ')'
 
     def selected(self):
         return self.select
@@ -76,9 +76,9 @@ class ShopItem(SubItem):
 
     @classmethod
     def parse(cls, string):
-        price_end = string.find(u'€ ')
-        name_end = string.rfind(u' (', price_end)
-        link_end = string.find(u')', name_end)
+        price_end = string.find('€ ')
+        name_end = string.rfind(' (', price_end)
+        link_end = string.find(')', name_end)
 
         price = int(float(string[:price_end]) * 100)
         name = string[price_end + 2:name_end]
@@ -160,15 +160,15 @@ class Item(ListItem):
         title = ""
         price = self.price
         if self.synced():
-            title = u"\u2713 "
+            title = "\\u2713 "
             price = self.selected_item.price
         elif self.searched():
-            title = u"\u2605 "
+            title = "\\u2605 "
 
         title += str(self.amount) + " " + self.name
 
         if price and price > 0:
-            title += " -=(" + str(price / 100.0) + u'€)'
+            title += " -=(" + str(price / 100.0) + '€)'
 
         return title
 
@@ -216,12 +216,12 @@ class Item(ListItem):
 
     @classmethod
     def parse_title(cls, title):
-        if title[0] == u"\u2713" or title[0] == u"\u2605":
+        if title[0] == "\\u2713" or title[0] == "\\u2605":
             title = title[2:]
 
         pos = title.find(" ")
         pos2 = title.find(" -=(")
-        euro = title.find(u" €", pos2)
+        euro = title.find(" €", pos2)
 
         price = None
         num_rating = None

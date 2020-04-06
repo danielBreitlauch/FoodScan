@@ -56,7 +56,7 @@ class MetaShopItem(ListItem):
         return self.actions
 
     def title(self):
-        return MetaShopItem.prefix + str(self.price / 100.0) + u'€'
+        return MetaShopItem.prefix + str(self.price / 100.0) + '€'
 
     def position(self):
         return -1

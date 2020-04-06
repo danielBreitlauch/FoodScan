@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from urllib2 import quote
+from urllib.parse import quote
 
 from bs4 import BeautifulSoup
 from pysimplelog import Logger
@@ -31,7 +31,7 @@ class Geizhals(BarcodeDecoder):
             return Item(name=self.parse_name(blob),
                         price=self.parse_price(blob),
                         url=url)
-        except Exception, e:
+        except Exception as e:
             self.logger.warn("Exception while searching for " + barcode + "\n" + str(e))
             return None
 
@@ -40,13 +40,13 @@ class Geizhals(BarcodeDecoder):
         if header:
             return header.find('span', {'itemprop': 'name'}).text
         else:
-            return blob.find('b', {'itemprop': 'name'}).next
+            return blob.find('b', {'itemprop': 'name'}).__next__
 
     def parse_price(self, blob):
         header = blob.find('h1', {'class': 'arthdr'})
         if header:
             price = header.find('span', {'class': 'gh_price'})
-            price = price.text.replace(u'€', '').strip()
+            price = price.text.replace('€', '').strip()
             p = price.split(',')
 
             return int(p[0]) * 100 + int(p[1])
