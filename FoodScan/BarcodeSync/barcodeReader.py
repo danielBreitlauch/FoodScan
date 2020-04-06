@@ -11,7 +11,7 @@ class BarcodeReader:
 
     def __init__(self, device):
         self.logger = Logger('Barcode scan')
-#        self.file = open(device, 'rb')
+        self.file = open(device, 'rb')
         self.q = queue.Queue()
         start_new_thread(self.scan, ())
 
