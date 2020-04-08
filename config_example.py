@@ -1,6 +1,6 @@
 
 barcode_sync_config = {
-    "barcode_device": "/dev/input/event0",
+    "barcode_device_name": "Barcode",
     "wunderlist_client_id": "client_id",
     "wunderlist_token": "generated_token",
     "wunderlist_list_id": 123456789

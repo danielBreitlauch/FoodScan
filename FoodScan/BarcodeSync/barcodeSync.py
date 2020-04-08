@@ -11,7 +11,7 @@ class BarcodeSync:
     def __init__(self, barcode_descriptor, config, shopList, asynchron=True):
         self.logger = Logger('BarcodeSync')
         self.barcode_descriptor = barcode_descriptor
-        self.barcode_reader = BarcodeReader(config['barcode_device'])
+        self.barcode_reader = BarcodeReader(config['barcode_device_name'])
         self.shop_list = shopList
         self.file_name = "barcode.db"
         self.matches = self.load()

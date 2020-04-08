@@ -12,7 +12,7 @@ beautifulsoup4 = "*"
 selenium = "*"
 bs4 = "*"
 wunderpy2 = "*"
-select = "*"
+evdev = "*"
 
 [requires]
 python_version = "3.7"
