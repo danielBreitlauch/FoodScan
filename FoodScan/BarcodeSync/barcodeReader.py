@@ -1,4 +1,3 @@
-import struct
 import traceback
 import evdev
 
@@ -30,12 +29,9 @@ class BarcodeReader:
         while True:
             try:
                 self.logger.info('Waiting for scanner data')
-
-                scanner_data = self.read()
-                barcodes = self.parse(scanner_data).split()
-                for barcode in barcodes:
-                    self.logger.info("Scanned barcode '{0}'".format(barcode))
-                    self.q.put(barcode)
+                barcode = self.read()
+                self.logger.info("Scanned barcode '{0}'".format(barcode))
+                self.q.put(barcode)
             except Exception:
                 traceback.print_exc()
 
@@ -48,20 +44,3 @@ class BarcodeReader:
                     return current_barcode
                 else:
                     current_barcode += keycode[4:]
-
-    @staticmethod
-    def parse(scanner_data):
-        # Parse the binary data as a barcode
-        upc_chars = []
-        for i in range(0, len(scanner_data), 16):
-            chunk = scanner_data[i:i + 16]
-
-            # The chunks we care about will match
-            # __  __  __  __  __  __  __  __  01  00  __  00  00  00  00  00
-            if chunk[8:10] != '\x01\x00' or chunk[11:] != '\x00\x00\x00\x00\x00':
-                continue
-
-            digit_int = struct.unpack('>h', chunk[9:11])[0]
-            upc_chars.append(str((digit_int - 1) % 10))
-
-        return ''.join(upc_chars)

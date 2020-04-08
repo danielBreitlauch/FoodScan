@@ -21,12 +21,12 @@ class BarcodeSync:
             self.listen()
 
     def save(self):
-        with open(self.file_name, 'w') as f:
+        with open(self.file_name, 'wb') as f:
             pickle.dump(self.matches, f)
 
     def load(self):
         try:
-            with open(self.file_name) as f:
+            with open(self.file_name, 'rb') as f:
                 return pickle.load(f)
         except IOError:
             return {}
@@ -53,7 +53,7 @@ class BarcodeSync:
                     if item:
                         self.remember_choice(barcode, item)
                 if item:
-                    self.logger.info("Detected: " + item.name.encode('utf-8'))
+                    self.logger.info("Detected: " + item.name)
                     self.add_barcode(item)
                 else:
                     self.logger.info("Could not id: " + barcode)
