@@ -1,4 +1,6 @@
 import io
+import json
+from random import randrange
 
 from requests import *
 import gzip
@@ -44,7 +46,7 @@ class Paprika3List(ShopList):
             possible_amount = name[0:position]
             if is_int(possible_amount):
                 name = name[position + 1:]
-                amount = possible_amount
+                amount = int(possible_amount)
 
         item = Item(name=name, amount=amount)
         item.select_shop_item(ShopItem(task['uid'], amount, name, None, None, True))
@@ -52,17 +54,19 @@ class Paprika3List(ShopList):
 
     def create_item(self, item):
         shop_item = item.selected_shop_item()
-        item_str = '''[
+        item_str = [
             {
-                "uid": "%s",
+                "uid": str(randrange(1000000)),
                 "order_flag": 0,
-                "purchased": false,
-                "list_uid": "%s",
-                "name": "%s %s"
+                "purchased": False,
+                "list_uid": self.paprikaListUUID,
+                "name": str(item.amount) + " " + item.name
             }
-        ]''' % (shop_item.article_id, self.paprikaListUUID, item.amount, item.name)
+        ]
+        if shop_item and shop_item.article_id:
+            item_str[0]["uid"] = shop_item.article_id
 
-        out = self.gzip(item_str)
+        out = self.gzip(json.dumps(item_str))
 
         files = {'data': out}
         post(self.paprikaRestURL + "sync/groceries", files=files, headers={
