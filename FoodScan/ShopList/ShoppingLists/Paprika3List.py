@@ -48,6 +48,9 @@ class Paprika3List(ShopList):
                 name = name[position + 1:]
                 amount = int(possible_amount)
 
+        if task['purchased']:
+            amount = 0
+
         item = Item(name=name, amount=amount)
         item.select_shop_item(ShopItem(task['uid'], amount, name, None, None, True))
         return item
@@ -59,6 +62,7 @@ class Paprika3List(ShopList):
                 "uid": str(randrange(1000000)),
                 "order_flag": 0,
                 "purchased": False,
+                "quantity": str(item.amount),
                 "list_uid": self.paprikaListUUID,
                 "name": str(item.amount) + " " + item.name
             }
@@ -66,9 +70,7 @@ class Paprika3List(ShopList):
         if shop_item and shop_item.article_id:
             item_str[0]["uid"] = shop_item.article_id
 
-        out = self.gzip(json.dumps(item_str))
-
-        files = {'data': out}
+        files = {'data': self.gzip(json.dumps(item_str))}
         post(self.paprikaRestURL + "sync/groceries", files=files, headers={
             'Authorization': "Bearer %s" % self.paprikaBearerToken,
         })
