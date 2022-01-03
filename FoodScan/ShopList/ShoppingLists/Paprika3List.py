@@ -32,7 +32,7 @@ class Paprika3List(ShopList):
         }
 
         items = get(self.paprikaRestURL + "sync/groceries/", headers=headers).json()
-        return items['result']
+        return [x for x in items['result'] if x['list_uid'] == self.paprikaListUUID]
 
     def item_from_task(self, task, with_selects=True):
         if 'quantity' in task and task['quantity'] is not None and is_int(task['quantity']):

@@ -62,9 +62,12 @@ class BarcodeSync:
 
     def add_barcode(self, item):
         for task, existing in self.shop_list.list_items():
+            self.logger.info("Existing item: " + existing.selected_shop_item().name)
             if existing.synced() and item.name.lower() in existing.selected_shop_item().name.lower():
                 existing.inc_amount()
                 self.shop_list.update_item(task, existing)
+                self.logger.info("Updated existing item: " + existing.selected_shop_item().name)
                 return
 
         self.shop_list.create_item(item)
+        self.logger.info("Create new item")

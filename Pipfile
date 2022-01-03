@@ -15,5 +15,5 @@ wunderpy2 = "*"
 evdev = "*"
 
 [requires]
-python_version = "3.7"
+python_version = "3"
 
