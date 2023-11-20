@@ -13,7 +13,8 @@ selenium = "*"
 bs4 = "*"
 wunderpy2 = "*"
 evdev = "*"
+requests = "*"
+openfoodfacts = "*"
 
 [requires]
 python_version = "3"
-
