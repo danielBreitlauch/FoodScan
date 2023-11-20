@@ -13,7 +13,7 @@ class CascadingBarcodeDecoder(BarcodeDecoder):
 
     def __init__(self):
         BarcodeDecoder.__init__(self)
-        self.methods = OrderedDict[OpenFoodFacts(), CodeCheck(), EanSearch(), DigitEye(), Geizhals()]
+        self.methods = OrderedDict(OpenFoodFacts(), CodeCheck(), EanSearch(), DigitEye(), Geizhals())
 
     @staticmethod
     def url(barcode):
