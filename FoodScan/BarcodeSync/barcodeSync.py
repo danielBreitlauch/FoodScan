@@ -70,7 +70,7 @@ class BarcodeSync:
         self.notify(item.name)
 
         for task, existing in self.shop_list.list_items():
-            self.logger.info("Existing item: " + existing.selected_shop_item().name)
+            # self.logger.info("Existing item: " + existing.selected_shop_item().name)
             if existing.synced() and item.name.lower() in existing.selected_shop_item().name.lower():
                 existing.inc_amount()
                 self.shop_list.update_item(task, existing)
