@@ -1,4 +1,3 @@
-from collections import OrderedDict
 import traceback
 
 from FoodScan.BarcodeSync.BarcodeDecoder.barcodeDecoder import BarcodeDecoder
@@ -13,7 +12,7 @@ class CascadingBarcodeDecoder(BarcodeDecoder):
 
     def __init__(self):
         BarcodeDecoder.__init__(self)
-        self.methods = OrderedDict(OpenFoodFacts(), CodeCheck(), EanSearch(), DigitEye(), Geizhals())
+        self.methods = [OpenFoodFacts(), CodeCheck(), EanSearch(), DigitEye(), Geizhals()]
 
     @staticmethod
     def url(barcode):

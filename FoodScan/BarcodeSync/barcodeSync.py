@@ -103,4 +103,3 @@ class BarcodeSync:
 
         response = requests.request("POST", self.notification_url, headers=headers, data=json.dumps(data))
         self.logger.info("Notification " + message + "sent. Response: " + str(response.status_code))
-        self.logger.info("Create new item")
