@@ -15,6 +15,7 @@ wunderpy2 = "*"
 evdev = "*"
 requests = "*"
 openfoodfacts = "*"
+certifi = "*"
 
 [requires]
 python_version = "3"
